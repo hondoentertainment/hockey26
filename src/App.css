@@ -43,6 +43,120 @@
   letter-spacing: -0.03em;
 }
 
+.app__howTo {
+  margin: 0 0 1rem 0;
+  padding: 0.75rem 0.85rem 0.8rem 1.75rem;
+  max-width: 40rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.app__howTo li {
+  margin: 0.4rem 0 0 0;
+  padding-left: 0.15rem;
+}
+
+.app__howTo li:first-child {
+  margin-top: 0;
+}
+
+.app__inlistLink {
+  display: inline;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: var(--accent-border, var(--accent));
+  text-underline-offset: 0.12em;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  border-radius: 0.1em;
+}
+
+.app__inlistLink:hover {
+  color: var(--accent-hover);
+}
+
+.app__inlistLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.app__headerScoreCol {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+  min-width: min(100%, 19rem);
+  flex: 0 1 auto;
+}
+
+.app__noOfficialBanner {
+  padding: 0.5rem 0.65rem 0.6rem;
+  background: var(--accent-muted);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+}
+
+.app__noOfficialBanner__text {
+  margin: 0 0 0.45rem 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.app__noOfficialBanner__text strong {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.app__noOfficialBanner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  align-items: center;
+}
+
+.app__textBtn {
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.2rem 0.35rem;
+  margin: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.app__textBtn:hover {
+  color: var(--accent);
+}
+
+.app__textBtn--primary {
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--accent);
+}
+
+.app__textBtn:focus-visible,
+.app__textBtn--primary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .app__lede {
   font-size: 0.95rem;
   line-height: 1.5;
@@ -170,6 +284,11 @@
   box-shadow: var(--shadow-sm);
 }
 
+.segmented__btn--em {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
 @media (prefers-color-scheme: dark) {
   .segmented__btn.is-active {
     background: #e8edf5;
@@ -263,6 +382,26 @@
   font-variant-numeric: tabular-nums;
 }
 
+.app__modeHint {
+  margin: 0.5rem 0 0.35rem 0;
+  max-width: 40rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  padding: 0.4rem 0.65rem 0.45rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+}
+
+.app__nhlTrust {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  max-width: 40rem;
+}
+
 /* --- NHL sync --- */
 .app__nhl {
   display: flex;
@@ -274,7 +413,7 @@
 }
 
 .app__nhlMsg {
-  margin: 0;
+  margin: 0.35rem 0 0;
   font-size: 0.875rem;
   color: var(--text);
   max-width: 40rem;
@@ -283,6 +422,11 @@
   background: var(--surface-2);
   border-radius: var(--radius-sm);
   border-left: 3px solid var(--success);
+}
+
+.app__nhlMsg--err {
+  border-left-color: #c23c2e;
+  background: var(--bg-elevated);
 }
 
 .btn-primary {
@@ -514,6 +658,12 @@
   letter-spacing: -0.02em;
 }
 
+.standings__title--emph {
+  padding: 0.1rem 0 0.1rem 0.6rem;
+  border-left: 3px solid var(--accent);
+  font-weight: 700;
+}
+
 .standings__sub,
 .standings__note {
   font-size: 0.9rem;
@@ -529,6 +679,15 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text);
+}
+
+.standings__hintMobile {
+  display: none;
+  margin: 0 0 0.75rem 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  max-width: 42rem;
 }
 
 .standings__tableWrap {
@@ -595,6 +754,37 @@
   font-weight: 500;
   color: var(--text-h);
   font-size: 0.87rem;
+}
+
+.standings__num--total {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--accent);
+}
+
+@media (max-width: 560px) {
+  .standings__hintMobile {
+    display: block;
+  }
+
+  .standings__colR {
+    display: none;
+  }
+
+  .standings__tableWrap {
+    max-height: none;
+    overflow-x: visible;
+  }
+
+  .standings__table th,
+  .standings__table td {
+    padding: 0.65rem 0.6rem;
+  }
+
+  .standings__name {
+    min-width: 0;
+    max-width: none;
+  }
 }
 
 /* --- Footer --- */

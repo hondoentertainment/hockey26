@@ -9,7 +9,14 @@ import type { Picks } from './config/bracketTypes'
 import { BracketGameCard } from './components/BracketGameCard'
 import { dependentGameIds } from './lib/bracketResolve'
 import { POOL_NHL_PATH_YEAR } from './config/poolNhl'
-import { loadPicks, loadResults, savePicks, saveResults } from './lib/persistence'
+import {
+  loadNhlLastSyncAt,
+  loadPicks,
+  loadResults,
+  saveNhlLastSyncAt,
+  savePicks,
+  saveResults,
+} from './lib/persistence'
 import { fetchNhlPlayoffBracket } from './lib/fetchNhlPlayoffBracket'
 import { buildOfficialResultsFromNhlBracket } from './lib/syncNhlToPoolResults'
 import { buildLeaderboard } from './lib/rankings'
@@ -42,6 +49,15 @@ const FINAL_ID = 'g15' as const
 
 type EditorMode = 'picks' | 'results'
 
+function formatNhlLastSyncAt(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+}
+
 function emptyPicksForIds(ids: readonly string[]): Picks {
   const p: Picks = {}
   for (const id of ids) p[id] = null
@@ -52,7 +68,10 @@ export default function App() {
   const [picks, setPicks] = useState<Picks>(loadPicks)
   const [results, setResults] = useState<Picks>(loadResults)
   const [mode, setMode] = useState<EditorMode>('picks')
-  const [nhlMessage, setNhlMessage] = useState<string | null>(null)
+  const [nhlError, setNhlError] = useState<string | null>(null)
+  const [nhlLastSyncAt, setNhlLastSyncAt] = useState<string | null>(
+    loadNhlLastSyncAt,
+  )
   const [nhlBusy, setNhlBusy] = useState(false)
 
   const scored = useMemo(
@@ -98,41 +117,149 @@ export default function App() {
   const stateForMode = mode === 'picks' ? picks : results
   const onPick = mode === 'picks' ? onPicks : onResults
 
+  const goPicks = useCallback(() => {
+    setMode('picks')
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById('bracket-main')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }, [])
+
+  const goOfficial = useCallback(() => {
+    setMode('results')
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById('region-official-results')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }, [])
+
+  const goStandings = useCallback(() => {
+    document
+      .getElementById('section-pool-standings')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
+
   return (
     <div className="app">
       <header className="app__header">
+        <ol className="app__howTo">
+          <li>
+            Fill in{' '}
+            <button
+              type="button"
+              className="app__inlistLink"
+              onClick={goPicks}
+            >
+              My picks
+            </button>
+            {', '}
+            the bracket card below.
+          </li>
+          <li>
+            In{' '}
+            <button
+              type="button"
+              className="app__inlistLink"
+              onClick={goOfficial}
+            >
+              Official results
+            </button>
+            , set or{' '}
+            <button
+              type="button"
+              className="app__inlistLink"
+              onClick={goOfficial}
+            >
+              sync from the NHL
+            </button>
+            {` — that’s the real world and drives the leaderboard and your score.`}
+          </li>
+          <li>
+            <button
+              type="button"
+              className="app__inlistLink"
+              onClick={goStandings}
+            >
+              Pool standings
+            </button>
+            {` show `}
+            <em>everyone’s</em>
+            {` totals after (2).`}
+          </li>
+        </ol>
         <div className="app__titleRow">
           <div>
             <p className="app__eyebrow">Playoff pool</p>
             <h1>Stanley Cup bracket</h1>
           </div>
-          <div className="app__scoreCard">
-            <div className="score-total" aria-label="Your score">
-              <span className="score-total__label">Your score</span>
-              <span className="score-total__value" aria-live="polite">
-                {scored.total}
-              </span>
-              <span className="score-total__max">out of {MAX_SCORE} points</span>
+          <div className="app__headerScoreCol">
+            <div className="app__scoreCard">
+              <div className="score-total" aria-label="Your score">
+                <span className="score-total__label">Your score</span>
+                <span className="score-total__value" aria-live="polite">
+                  {scored.total}
+                </span>
+                <span className="score-total__max">out of {MAX_SCORE} points</span>
+              </div>
+              <ul className="score-by-round" aria-label="Points by round">
+                <li>
+                  R1 <strong>{scored.byRound[0]}</strong>
+                </li>
+                <li>
+                  R2 <strong>{scored.byRound[1]}</strong>
+                </li>
+                <li>
+                  R3 <strong>{scored.byRound[2]}</strong>
+                </li>
+                <li>
+                  F <strong>{scored.byRound[3]}</strong>
+                </li>
+              </ul>
             </div>
-            <ul className="score-by-round" aria-label="Points by round">
-              <li>
-                R1 <strong>{scored.byRound[0]}</strong>
-              </li>
-              <li>
-                R2 <strong>{scored.byRound[1]}</strong>
-              </li>
-              <li>
-                R3 <strong>{scored.byRound[2]}</strong>
-              </li>
-              <li>
-                F <strong>{scored.byRound[3]}</strong>
-              </li>
-            </ul>
+            {!hasOfficialResults ? (
+              <div
+                className="app__noOfficialBanner"
+                role="status"
+                aria-live="polite"
+              >
+                <p className="app__noOfficialBanner__text">
+                  <strong>Standings need official results first.</strong> The pool
+                  table stays at 0 until winners are set in Official results
+                  (or synced from the NHL).
+                </p>
+                <div className="app__noOfficialBanner__actions">
+                  <button
+                    type="button"
+                    className="app__textBtn app__textBtn--primary"
+                    onClick={goOfficial}
+                  >
+                    Go to Official results
+                  </button>
+                  <button
+                    type="button"
+                    className="app__textBtn"
+                    onClick={goStandings}
+                  >
+                    View pool standings
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
         <p className="app__lede">
-          Picks and official results use the same bracket. Scoring by round: 1 · 2 ·
-          4 · 8. Standings update from your official results and the pool Excel import.
+          Scoring by round: 1–2–4–8. Your number above is picks vs. official
+          results; the{' '}
+          <button
+            type="button"
+            className="app__inlistLink"
+            onClick={goStandings}
+          >
+            pool standings
+          </button>
+          {` rank everyone in the import.`}
         </p>
         <details className="app__meta">
           <summary>Data sources &amp; dev commands</summary>
@@ -146,7 +273,7 @@ export default function App() {
             <code className="app__code">src/config/poolNhl.ts</code>.
           </p>
         </details>
-        <div className="app__toolbar">
+        <div id="region-official-results" className="app__toolbar">
           <div className="app__mode">
             <span className="app__modeLabel">Editing</span>
             <div
@@ -167,10 +294,13 @@ export default function App() {
                 type="button"
                 role="tab"
                 className={
-                  mode === 'results' ? 'segmented__btn is-active' : 'segmented__btn'
+                  mode === 'results'
+                    ? 'segmented__btn segmented__btn--em is-active'
+                    : 'segmented__btn segmented__btn--em'
                 }
                 onClick={() => setMode('results')}
                 aria-selected={mode === 'results'}
+                title="Real outcomes — fill these to score picks and the pool"
               >
                 Official results
               </button>
@@ -181,6 +311,7 @@ export default function App() {
               <button
                 type="button"
                 className="btn-primary"
+                id="sync-nhl-button"
                 disabled={nhlBusy}
                 onClick={async () => {
                   if (
@@ -191,14 +322,16 @@ export default function App() {
                     return
                   }
                   setNhlBusy(true)
-                  setNhlMessage(null)
+                  setNhlError(null)
                   try {
                     const data = await fetchNhlPlayoffBracket(POOL_NHL_PATH_YEAR)
                     const next = buildOfficialResultsFromNhlBracket(data, GAMES)
                     setResults(next)
-                    setNhlMessage('Official results updated from NHL bracket.')
+                    const at = new Date().toISOString()
+                    saveNhlLastSyncAt(at)
+                    setNhlLastSyncAt(at)
                   } catch (e) {
-                    setNhlMessage(
+                    setNhlError(
                       e instanceof Error
                         ? e.message
                         : 'Could not load the NHL bracket.',
@@ -215,10 +348,23 @@ export default function App() {
             </div>
           )}
         </div>
-        {nhlMessage ? <p className="app__nhlMsg">{nhlMessage}</p> : null}
+        <p className="app__modeHint">
+          Picks = your card; official results = what actually happened and drive
+          the pool standings and your score.
+        </p>
+        {nhlLastSyncAt ? (
+          <p className="app__nhlTrust" role="status">
+            NHL data loaded {formatNhlLastSyncAt(nhlLastSyncAt)}.
+          </p>
+        ) : null}
+        {nhlError ? (
+          <p className="app__nhlMsg app__nhlMsg--err" role="alert">
+            {nhlError}
+          </p>
+        ) : null}
       </header>
 
-      <main className="bracket">
+      <main className="bracket" id="bracket-main">
         <div className="bracket__col bracket__col--left">
           <h2 className="bracket__sideTitle">Left bracket</h2>
           {LEFT_ORDER.map((id) => {
@@ -268,18 +414,45 @@ export default function App() {
         </div>
       </main>
 
-      <section className="standings" aria-label="Pool standings">
-        <h2 className="standings__title">Pool standings</h2>
+      <section
+        className="standings"
+        id="section-pool-standings"
+        aria-label="Pool standings"
+      >
+        <h2 className="standings__title standings__title--emph">Pool standings</h2>
         <p className="standings__sub">
-          {poolPlayers.length} entries from the Excel import. Scores use your
-          &quot;Official results&quot; above; everyone ties at 0 until those are
-          set (or use Sync from NHL).
+          {hasOfficialResults ? (
+            <>
+              {poolPlayers.length} entries (Excel import), ranked on official
+              results from above.
+            </>
+          ) : (
+            <>
+              {poolPlayers.length} pool entries. Totals here stay 0 until you
+              set{' '}
+              <button
+                type="button"
+                className="app__inlistLink"
+                onClick={goOfficial}
+              >
+                Official results
+              </button>{' '}
+              or use{' '}
+              <button
+                type="button"
+                className="app__inlistLink"
+                onClick={goOfficial}
+              >
+                Sync from NHL
+              </button>
+              {'.'}
+            </>
+          )}
         </p>
-        {!hasOfficialResults ? (
-          <p className="standings__note" role="status">
-            No official results yet — all entries show 0 points.
-          </p>
-        ) : null}
+        <p className="standings__hintMobile">
+          Compact view: rank, name, and total. Rotate or widen the screen to see
+          R1–Final.
+        </p>
         <div className="standings__tableWrap">
           <table className="standings__table">
             <thead>
@@ -287,10 +460,18 @@ export default function App() {
                 <th scope="col">Rank</th>
                 <th scope="col">Name</th>
                 <th scope="col">Total</th>
-                <th scope="col">R1</th>
-                <th scope="col">R2</th>
-                <th scope="col">R3</th>
-                <th scope="col">Final</th>
+                <th scope="col" className="standings__colR">
+                  R1
+                </th>
+                <th scope="col" className="standings__colR">
+                  R2
+                </th>
+                <th scope="col" className="standings__colR">
+                  R3
+                </th>
+                <th scope="col" className="standings__colR">
+                  Final
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -298,11 +479,21 @@ export default function App() {
                 <tr key={row.id}>
                   <td className="standings__num">{row.rank}</td>
                   <td className="standings__name">{row.name}</td>
-                  <td className="standings__num">{row.total}</td>
-                  <td className="standings__num">{row.byRound[0]}</td>
-                  <td className="standings__num">{row.byRound[1]}</td>
-                  <td className="standings__num">{row.byRound[2]}</td>
-                  <td className="standings__num">{row.byRound[3]}</td>
+                  <td className="standings__num standings__num--total">
+                    {row.total}
+                  </td>
+                  <td className="standings__num standings__colR">
+                    {row.byRound[0]}
+                  </td>
+                  <td className="standings__num standings__colR">
+                    {row.byRound[1]}
+                  </td>
+                  <td className="standings__num standings__colR">
+                    {row.byRound[2]}
+                  </td>
+                  <td className="standings__num standings__colR">
+                    {row.byRound[3]}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -331,6 +522,8 @@ export default function App() {
             onClick={() => {
               if (!confirm('Clear all official results?')) return
               setResults(emptyPicksForIds([...allGameIds]))
+              saveNhlLastSyncAt(null)
+              setNhlLastSyncAt(null)
             }}
           >
             Clear official results

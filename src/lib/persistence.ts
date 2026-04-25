@@ -2,6 +2,7 @@ import type { Picks } from '../config/bracketTypes'
 
 const KEY_PICKS = 'hockey26.picks'
 const KEY_RESULTS = 'hockey26.results'
+const KEY_NHL_LAST_SYNC = 'hockey26.nhlLastSyncAt'
 
 function readJson(key: string): Picks {
   if (typeof localStorage === 'undefined') return {}
@@ -39,4 +40,30 @@ export function loadResults(): Picks {
 
 export function saveResults(results: Picks): void {
   writeJson(KEY_RESULTS, results)
+}
+
+/** ISO timestamp string from the last successful NHL sync, or null. */
+export function loadNhlLastSyncAt(): string | null {
+  if (typeof localStorage === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(KEY_NHL_LAST_SYNC)
+    if (!raw) return null
+    const d = new Date(raw)
+    return Number.isNaN(d.getTime()) ? null : raw
+  } catch {
+    return null
+  }
+}
+
+export function saveNhlLastSyncAt(iso: string | null): void {
+  if (typeof localStorage === 'undefined') return
+  try {
+    if (iso == null) {
+      localStorage.removeItem(KEY_NHL_LAST_SYNC)
+    } else {
+      localStorage.setItem(KEY_NHL_LAST_SYNC, iso)
+    }
+  } catch {
+    // ignore
+  }
 }
