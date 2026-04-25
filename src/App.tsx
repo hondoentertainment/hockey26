@@ -7,47 +7,39 @@ import {
 } from './config/bracket-2026'
 import type { Picks } from './config/bracketTypes'
 import { BracketGameCard } from './components/BracketGameCard'
-import { dependentGameIds } from './lib/bracketResolve'
+import {
+  coerceOfficialResultsByFeeds,
+  dependentGameIds,
+} from './lib/bracketResolve'
 import { POOL_NHL_PATH_YEAR } from './config/poolNhl'
 import {
   loadNhlLastSyncAt,
-  loadPicks,
   loadResults,
+  loadScoreOverrides,
   saveNhlLastSyncAt,
-  savePicks,
   saveResults,
+  saveScoreOverrides,
+  type ScoreOverride,
+  type ScoreOverrides,
 } from './lib/persistence'
 import { fetchNhlPlayoffBracket } from './lib/fetchNhlPlayoffBracket'
 import { buildOfficialResultsFromNhlBracket } from './lib/syncNhlToPoolResults'
 import { buildLeaderboard } from './lib/rankings'
 import { scoreBracket } from './lib/score'
+import { getSitePicksSource } from './lib/sitePicksFromPool'
 import type { ParticipantsFile } from './config/participantsFromExcel.schema'
 import poolFile from './config/participantsFromExcel.json' with { type: 'json' }
+import officialResultsBaseline from './config/officialResultsBaseline.json' with { type: 'json' }
 import './App.css'
 
-const { players: poolPlayers } = poolFile as ParticipantsFile
+const poolData = poolFile as ParticipantsFile
+const { players: poolPlayers } = poolData
 
-const LEFT_ORDER = [
-  'g1',
-  'g2',
-  'g3',
-  'g4',
-  'g9',
-  'g10',
-  'g13',
-] as const
-const RIGHT_ORDER = [
-  'g5',
-  'g6',
-  'g7',
-  'g8',
-  'g11',
-  'g12',
-  'g14',
-] as const
 const FINAL_ID = 'g15' as const
 
 type EditorMode = 'picks' | 'results'
+type RoundIndex = 0 | 1 | 2 | 3
+type ScoreField = 'total' | RoundIndex
 
 function formatNhlLastSyncAt(iso: string): string {
   const d = new Date(iso)
@@ -64,24 +56,89 @@ function emptyPicksForIds(ids: readonly string[]): Picks {
   return p
 }
 
+/**
+ * Shipped playoff snapshot: localStorage first, then keys in
+ * `officialResultsBaseline.json` override (so curated nulls like g2 stay
+ * in-progress even if an old save had MIN winning DAL/MIN). Remove a key
+ * from that file when you want saves / NHL sync to own that slot again.
+ */
+function mergeOfficialResultsBaseline(saved: Picks): Picks {
+  const empty = emptyPicksForIds([...allGameIds])
+  const baseline = officialResultsBaseline as Picks
+  const merged = { ...empty, ...saved, ...baseline }
+  return coerceOfficialResultsByFeeds(merged, GAMES)
+}
+
+function applyScoreOverrides(
+  rows: ReturnType<typeof buildLeaderboard>,
+  overrides: ScoreOverrides,
+): ReturnType<typeof buildLeaderboard> {
+  const scored = rows.map((row) => {
+    const override = overrides[row.id]
+    const byRound = row.byRound.map((score, index) => {
+      const round = index as RoundIndex
+      return override?.byRound?.[round] ?? score
+    }) as [number, number, number, number]
+    const hasRoundOverride = [0, 1, 2, 3].some(
+      (round) => override?.byRound?.[round as RoundIndex] != null,
+    )
+    const total =
+      override?.total ??
+      (hasRoundOverride
+        ? byRound.reduce((sum, score) => sum + score, 0)
+        : row.total)
+    return { ...row, total, byRound }
+  })
+
+  return scored
+    .map((row) => ({
+      ...row,
+      rank: 1 + scored.filter((other) => other.total > row.total).length,
+    }))
+    .sort((a, b) => {
+      if (b.total !== a.total) return b.total - a.total
+      return a.name.localeCompare(b.name)
+    })
+}
+
+function parseScoreInput(raw: string): number | null {
+  const trimmed = raw.trim()
+  if (trimmed === '') return null
+  const value = Number(trimmed)
+  if (!Number.isFinite(value)) return null
+  return Math.max(0, Math.trunc(value))
+}
+
 export default function App() {
-  const [picks, setPicks] = useState<Picks>(loadPicks)
-  const [results, setResults] = useState<Picks>(loadResults)
+  const { picks: sitePicks, name: sitePicksName } = useMemo(
+    () => getSitePicksSource(poolData),
+    [],
+  )
+  const [results, setResults] = useState<Picks>(() =>
+    mergeOfficialResultsBaseline(loadResults()),
+  )
   const [mode, setMode] = useState<EditorMode>('picks')
   const [nhlError, setNhlError] = useState<string | null>(null)
   const [nhlLastSyncAt, setNhlLastSyncAt] = useState<string | null>(
     loadNhlLastSyncAt,
   )
   const [nhlBusy, setNhlBusy] = useState(false)
+  const [scoreOverrides, setScoreOverrides] =
+    useState<ScoreOverrides>(loadScoreOverrides)
 
   const scored = useMemo(
-    () => scoreBracket(picks, results, GAMES),
-    [picks, results],
+    () => scoreBracket(sitePicks, results, GAMES),
+    [sitePicks, results],
+  )
+
+  const calculatedRankings = useMemo(
+    () => buildLeaderboard(poolPlayers, results, GAMES),
+    [results],
   )
 
   const rankings = useMemo(
-    () => buildLeaderboard(poolPlayers, results, GAMES),
-    [results],
+    () => applyScoreOverrides(calculatedRankings, scoreOverrides),
+    [calculatedRankings, scoreOverrides],
   )
 
   const hasOfficialResults = useMemo(
@@ -89,33 +146,67 @@ export default function App() {
     [results],
   )
 
-  const applyChoice = useCallback(
-    (setState: typeof setPicks) =>
-      (gameId: string, abbr: string) => {
-        setState((prev) => {
-          const next: Picks = { ...prev, [gameId]: abbr }
-          for (const d of dependentGameIds(GAMES, [gameId])) {
-            next[d] = null
-          }
-          return next
-        })
-      },
-    [],
-  )
-
-  useEffect(() => {
-    savePicks(picks)
-  }, [picks])
-
   useEffect(() => {
     saveResults(results)
   }, [results])
 
-  const onPicks = applyChoice(setPicks)
-  const onResults = applyChoice(setResults)
+  useEffect(() => {
+    saveScoreOverrides(scoreOverrides)
+  }, [scoreOverrides])
 
-  const stateForMode = mode === 'picks' ? picks : results
-  const onPick = mode === 'picks' ? onPicks : onResults
+  const onResults = useCallback((gameId: string, abbr: string) => {
+    setResults((prev) => {
+      const next: Picks = { ...prev, [gameId]: abbr }
+      for (const d of dependentGameIds(GAMES, [gameId])) {
+        next[d] = null
+      }
+      return next
+    })
+  }, [])
+
+  const onScoreOverride = useCallback(
+    (playerId: string, field: ScoreField, value: number | null) => {
+      setScoreOverrides((prev) => {
+        const next = { ...prev }
+        const current: ScoreOverride = next[playerId]
+          ? {
+              ...next[playerId],
+              byRound: next[playerId].byRound
+                ? { ...next[playerId].byRound }
+                : undefined,
+            }
+          : {}
+
+        if (field === 'total') {
+          if (value == null) {
+            delete current.total
+          } else {
+            current.total = value
+          }
+        } else {
+          const byRound = { ...(current.byRound ?? {}) }
+          if (value == null) {
+            delete byRound[field]
+          } else {
+            byRound[field] = value
+          }
+          current.byRound =
+            Object.keys(byRound).length > 0 ? byRound : undefined
+        }
+
+        if (current.total == null && current.byRound == null) {
+          delete next[playerId]
+        } else {
+          next[playerId] = current
+        }
+        return next
+      })
+    },
+    [],
+  )
+
+  const stateForMode = mode === 'picks' ? sitePicks : results
+  const bracketInteractive = mode === 'results'
 
   const goPicks = useCallback(() => {
     setMode('picks')
@@ -146,7 +237,6 @@ export default function App() {
       <header className="app__header">
         <ol className="app__howTo">
           <li>
-            Fill in{' '}
             <button
               type="button"
               className="app__inlistLink"
@@ -154,8 +244,7 @@ export default function App() {
             >
               My picks
             </button>
-            {', '}
-            the bracket card below.
+            {` show ${sitePicksName}'s bracket from the pool sheet (read-only here).`}
           </li>
           <li>
             In{' '}
@@ -174,7 +263,7 @@ export default function App() {
             >
               sync from the NHL
             </button>
-            {` — that’s the real world and drives the leaderboard and your score.`}
+            {` — that's the real world and drives the leaderboard and ${sitePicksName}'s score (points accrue only after each series is decided).`}
           </li>
           <li>
             <button
@@ -196,27 +285,18 @@ export default function App() {
           </div>
           <div className="app__headerScoreCol">
             <div className="app__scoreCard">
-              <div className="score-total" aria-label="Your score">
-                <span className="score-total__label">Your score</span>
+              <div
+                className="score-total"
+                aria-label={`${sitePicksName} score vs official results`}
+              >
+                <span className="score-total__label">
+                  {sitePicksName} · score
+                </span>
                 <span className="score-total__value" aria-live="polite">
                   {scored.total}
                 </span>
                 <span className="score-total__max">out of {MAX_SCORE} points</span>
               </div>
-              <ul className="score-by-round" aria-label="Points by round">
-                <li>
-                  R1 <strong>{scored.byRound[0]}</strong>
-                </li>
-                <li>
-                  R2 <strong>{scored.byRound[1]}</strong>
-                </li>
-                <li>
-                  R3 <strong>{scored.byRound[2]}</strong>
-                </li>
-                <li>
-                  F <strong>{scored.byRound[3]}</strong>
-                </li>
-              </ul>
             </div>
             {!hasOfficialResults ? (
               <div
@@ -250,8 +330,10 @@ export default function App() {
           </div>
         </div>
         <p className="app__lede">
-          Scoring by round: 1–2–4–8. Your number above is picks vs. official
-          results; the{' '}
+          Scoring by round: 1–2–4–8. The total above is {sitePicksName}'s score
+          vs. official results — you only earn points for a slot once that
+          series is decided (NHL sync applies when a real series hits four
+          wins). The{' '}
           <button
             type="button"
             className="app__inlistLink"
@@ -270,7 +352,10 @@ export default function App() {
             <code className="app__code">bracket:from-excel</code> /{' '}
             <code className="app__code">participants:from-excel</code> only). Official
             NHL sync (when a matchup matches a real series) uses the path year in{' '}
-            <code className="app__code">src/config/poolNhl.ts</code>.
+            <code className="app__code">src/config/poolNhl.ts</code>. Which row powers
+            the site bracket is{' '}
+            <code className="app__code">defaultPicksPlayerId</code> in{' '}
+            <code className="app__code">participantsFromExcel.json</code>.
           </p>
         </details>
         <div id="region-official-results" className="app__toolbar">
@@ -300,7 +385,7 @@ export default function App() {
                 }
                 onClick={() => setMode('results')}
                 aria-selected={mode === 'results'}
-                title="Real outcomes — fill these to score picks and the pool"
+                title="Decided games only: set each winner after the series is complete, or sync from the NHL (four wins to a series)"
               >
                 Official results
               </button>
@@ -349,8 +434,10 @@ export default function App() {
           )}
         </div>
         <p className="app__modeHint">
-          Picks = your card; official results = what actually happened and drive
-          the pool standings and your score.
+          My picks = {sitePicksName}'s bracket from the Excel import (not editable
+          on this page). Official results = what actually happened; they drive the
+          pool standings and the score above. In-progress series stay empty until
+          someone clinches, so points lag the live schedule.
         </p>
         {nhlLastSyncAt ? (
           <p className="app__nhlTrust" role="status">
@@ -365,23 +452,83 @@ export default function App() {
       </header>
 
       <main className="bracket" id="bracket-main">
+        <h2 className="bracket__confHeading bracket__confHeading--west">
+          Western Conference
+        </h2>
+        <h2 className="bracket__confHeading bracket__confHeading--championship">
+          Championship
+        </h2>
+        <h2 className="bracket__confHeading bracket__confHeading--east">
+          Eastern Conference
+        </h2>
+
         <div className="bracket__col bracket__col--left">
-          <h2 className="bracket__sideTitle">Left bracket</h2>
-          {LEFT_ORDER.map((id) => {
-            const g = getGameById(id)
-            if (!g) return null
-            return (
-              <BracketGameCard
-                key={id}
-                game={g}
-                state={stateForMode}
-                mode={mode}
-                onPick={onPick}
-              />
-            )
-          })}
+          <div className="bracket__rounds">
+            <div className="bracket__roundGroup">
+              <h3 className="bracket__roundTitle">First round</h3>
+              <div className="bracket__r1Grid">
+                {(['g1', 'g2', 'g3', 'g4'] as const).map((id) => {
+                  const g = getGameById(id)
+                  if (!g) return null
+                  return (
+                    <BracketGameCard
+                      key={id}
+                      game={g}
+                      state={stateForMode}
+                      mode={mode}
+                      layout="bracket"
+                      interactive={bracketInteractive}
+                      onPick={onResults}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+            <div className="bracket__roundGroup">
+              <h3 className="bracket__roundTitle">Second round</h3>
+              <div className="bracket__r2Row">
+                {(['g9', 'g10'] as const).map((id) => {
+                  const g = getGameById(id)
+                  if (!g) return null
+                  return (
+                    <BracketGameCard
+                      key={id}
+                      game={g}
+                      state={stateForMode}
+                      mode={mode}
+                      layout="bracket"
+                      interactive={bracketInteractive}
+                      onPick={onResults}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+            <div className="bracket__roundGroup">
+              <h3 className="bracket__roundTitle">Conference finals</h3>
+              {(() => {
+                const g = getGameById('g13')
+                if (!g) return null
+                return (
+                  <BracketGameCard
+                    key="g13"
+                    game={g}
+                    state={stateForMode}
+                    mode={mode}
+                    layout="bracket"
+                    interactive={bracketInteractive}
+                    onPick={onResults}
+                  />
+                )
+              })()}
+            </div>
+          </div>
         </div>
+
         <div className="bracket__col bracket__col--final">
+          <h3 className="bracket__roundTitle bracket__roundTitle--center">
+            Stanley Cup Final
+          </h3>
           {(() => {
             const g = getGameById(FINAL_ID)
             if (!g) return null
@@ -391,26 +538,75 @@ export default function App() {
                 game={g}
                 state={stateForMode}
                 mode={mode}
-                onPick={onPick}
+                layout="bracket"
+                interactive={bracketInteractive}
+                onPick={onResults}
               />
             )
           })()}
         </div>
+
         <div className="bracket__col bracket__col--right">
-          <h2 className="bracket__sideTitle">Right bracket</h2>
-          {RIGHT_ORDER.map((id) => {
-            const g = getGameById(id)
-            if (!g) return null
-            return (
-              <BracketGameCard
-                key={id}
-                game={g}
-                state={stateForMode}
-                mode={mode}
-                onPick={onPick}
-              />
-            )
-          })}
+          <div className="bracket__rounds">
+            <div className="bracket__roundGroup">
+              <h3 className="bracket__roundTitle">First round</h3>
+              <div className="bracket__r1Grid">
+                {(['g5', 'g6', 'g7', 'g8'] as const).map((id) => {
+                  const g = getGameById(id)
+                  if (!g) return null
+                  return (
+                    <BracketGameCard
+                      key={id}
+                      game={g}
+                      state={stateForMode}
+                      mode={mode}
+                      layout="bracket"
+                      interactive={bracketInteractive}
+                      onPick={onResults}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+            <div className="bracket__roundGroup">
+              <h3 className="bracket__roundTitle">Second round</h3>
+              <div className="bracket__r2Row">
+                {(['g11', 'g12'] as const).map((id) => {
+                  const g = getGameById(id)
+                  if (!g) return null
+                  return (
+                    <BracketGameCard
+                      key={id}
+                      game={g}
+                      state={stateForMode}
+                      mode={mode}
+                      layout="bracket"
+                      interactive={bracketInteractive}
+                      onPick={onResults}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+            <div className="bracket__roundGroup">
+              <h3 className="bracket__roundTitle">Conference finals</h3>
+              {(() => {
+                const g = getGameById('g14')
+                if (!g) return null
+                return (
+                  <BracketGameCard
+                    key="g14"
+                    game={g}
+                    state={stateForMode}
+                    mode={mode}
+                    layout="bracket"
+                    interactive={bracketInteractive}
+                    onPick={onResults}
+                  />
+                )
+              })()}
+            </div>
+          </div>
         </div>
       </main>
 
@@ -424,7 +620,9 @@ export default function App() {
           {hasOfficialResults ? (
             <>
               {poolPlayers.length} entries (Excel import), ranked on official
-              results from above.
+              results from above, with direct edits in this grid taking
+              precedence. Round columns only include points from matchups with a
+              decided winner (in-progress series stay at 0 for that slot).
             </>
           ) : (
             <>
@@ -450,8 +648,8 @@ export default function App() {
           )}
         </p>
         <p className="standings__hintMobile">
-          Compact view: rank, name, and total. Rotate or widen the screen to see
-          R1–Final.
+          Compact view: rank, name, and editable total. Rotate or widen the
+          screen to see R1-Final.
         </p>
         <div className="standings__tableWrap">
           <table className="standings__table">
@@ -479,57 +677,71 @@ export default function App() {
                 <tr key={row.id}>
                   <td className="standings__num">{row.rank}</td>
                   <td className="standings__name">{row.name}</td>
-                  <td className="standings__num standings__num--total">
-                    {row.total}
-                  </td>
-                  <td className="standings__num standings__colR">
-                    {row.byRound[0]}
-                  </td>
-                  <td className="standings__num standings__colR">
-                    {row.byRound[1]}
-                  </td>
-                  <td className="standings__num standings__colR">
-                    {row.byRound[2]}
-                  </td>
-                  <td className="standings__num standings__colR">
-                    {row.byRound[3]}
-                  </td>
+                  <EditableScoreCell
+                    value={row.total}
+                    className="standings__num standings__num--total"
+                    ariaLabel={`${row.name} total score`}
+                    onChange={(value) =>
+                      onScoreOverride(row.id, 'total', value)
+                    }
+                  />
+                  <EditableScoreCell
+                    value={row.byRound[0]}
+                    className="standings__num standings__colR"
+                    ariaLabel={`${row.name} round 1 score`}
+                    onChange={(value) => onScoreOverride(row.id, 0, value)}
+                  />
+                  <EditableScoreCell
+                    value={row.byRound[1]}
+                    className="standings__num standings__colR"
+                    ariaLabel={`${row.name} round 2 score`}
+                    onChange={(value) => onScoreOverride(row.id, 1, value)}
+                  />
+                  <EditableScoreCell
+                    value={row.byRound[2]}
+                    className="standings__num standings__colR"
+                    ariaLabel={`${row.name} round 3 score`}
+                    onChange={(value) => onScoreOverride(row.id, 2, value)}
+                  />
+                  <EditableScoreCell
+                    value={row.byRound[3]}
+                    className="standings__num standings__colR"
+                    ariaLabel={`${row.name} final score`}
+                    onChange={(value) => onScoreOverride(row.id, 3, value)}
+                  />
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </section>
-
-      <footer className="app__foot">
-        <div className="app__actions">
-          <button
-            type="button"
-            className="btn-ghost"
-            onClick={() => {
-              if (
-                !confirm('Clear your picks? This does not clear official results.')
-              )
-                return
-              setPicks(emptyPicksForIds([...allGameIds]))
-            }}
-          >
-            Clear all picks
-          </button>
-          <button
-            type="button"
-            className="btn-ghost"
-            onClick={() => {
-              if (!confirm('Clear all official results?')) return
-              setResults(emptyPicksForIds([...allGameIds]))
-              saveNhlLastSyncAt(null)
-              setNhlLastSyncAt(null)
-            }}
-          >
-            Clear official results
-          </button>
-        </div>
-      </footer>
     </div>
+  )
+}
+
+function EditableScoreCell({
+  value,
+  className,
+  ariaLabel,
+  onChange,
+}: {
+  value: number
+  className: string
+  ariaLabel: string
+  onChange: (value: number | null) => void
+}) {
+  return (
+    <td className={className}>
+      <input
+        className="standings__scoreInput"
+        type="number"
+        min="0"
+        step="1"
+        inputMode="numeric"
+        aria-label={ariaLabel}
+        value={value}
+        onChange={(event) => onChange(parseScoreInput(event.currentTarget.value))}
+      />
+    </td>
   )
 }

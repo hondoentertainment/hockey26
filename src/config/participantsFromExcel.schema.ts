@@ -8,4 +8,6 @@ export type ExcelPoolPlayer = {
 
 export type ParticipantsFile = {
   players: ExcelPoolPlayer[]
+  /** Whose picks power the site bracket / “My picks”. Defaults to first player. */
+  defaultPicksPlayerId?: string
 }

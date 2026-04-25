@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { GAMES, getGameById } from '../config/bracket-2026'
 import type { Picks } from '../config/bracketTypes'
-import { dependentGameIds, getSlotTeams } from './bracketResolve'
+import {
+  coerceOfficialResultsByFeeds,
+  dependentGameIds,
+  getSlotTeams,
+} from './bracketResolve'
 
 describe('getSlotTeams', () => {
   it('returns fixed teams for first round', () => {
@@ -28,6 +32,24 @@ describe('getSlotTeams', () => {
     const s = getSlotTeams(g, { g1: 'COL' })
     expect(s.top?.abbr).toBe('COL')
     expect(s.bottom).toBeNull()
+  })
+})
+
+describe('coerceOfficialResultsByFeeds', () => {
+  it('clears downstream KOs when a feeder winner is missing', () => {
+    const r: Picks = {
+      g1: 'COL',
+      g2: null,
+      g9: 'COL',
+      g13: 'COL',
+      g15: 'COL',
+    }
+    const out = coerceOfficialResultsByFeeds(r, GAMES)
+    expect(out.g2).toBeNull()
+    expect(out.g9).toBeNull()
+    expect(out.g13).toBeNull()
+    expect(out.g15).toBeNull()
+    expect(out.g1).toBe('COL')
   })
 })
 

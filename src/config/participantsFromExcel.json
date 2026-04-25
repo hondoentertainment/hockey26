@@ -1,6 +1,7 @@
 {
   "$schemaNote": "Regenerate: npm run participants:from-excel",
   "source": "Hockey Tracking.xlsx",
+  "defaultPicksPlayerId": "1",
   "players": [
     {
       "id": "1",

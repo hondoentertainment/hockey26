@@ -354,34 +354,6 @@
   margin-top: 0.2rem;
 }
 
-.score-by-round {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem 0.65rem;
-  font-size: 0.78rem;
-}
-
-.score-by-round li {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.5rem;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.score-by-round strong {
-  color: var(--text-h);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
 .app__modeHint {
   margin: 0.5rem 0 0.35rem 0;
   max-width: 40rem;
@@ -466,21 +438,96 @@
   }
 }
 
-/* --- Bracket grid --- */
+/* --- Bracket grid (Western | Championship | Eastern) --- */
 .bracket {
   display: grid;
   grid-template-columns: 1fr minmax(11rem, 16rem) 1fr;
-  gap: 1.25rem;
+  grid-template-rows: auto 1fr;
+  gap: 0.4rem 1.25rem;
   align-items: start;
+}
+
+.bracket__confHeading {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin: 0;
+  padding: 0.35rem 0 0.25rem;
+  border-bottom: 1px solid var(--border);
+  align-self: end;
+}
+
+.bracket__confHeading--west {
+  grid-column: 1;
+  grid-row: 1;
+  text-align: left;
+}
+
+.bracket__confHeading--championship {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: center;
+  border-color: var(--border-strong, var(--border));
+}
+
+.bracket__confHeading--east {
+  grid-column: 3;
+  grid-row: 1;
+  text-align: right;
+}
+
+.bracket__col--left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.bracket__col--final {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.bracket__col--right {
+  grid-column: 3;
+  grid-row: 2;
 }
 
 @media (max-width: 960px) {
   .bracket {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .bracket__confHeading {
+    border-bottom: none;
+    padding: 0.5rem 0.25rem 0.2rem;
+    margin-top: 0.5rem;
+  }
+
+  .bracket__confHeading--west {
+    order: 1;
+  }
+
+  .bracket__col--left {
+    order: 2;
+  }
+
+  .bracket__confHeading--championship {
+    order: 3;
   }
 
   .bracket__col--final {
-    order: 3;
+    order: 4;
+  }
+
+  .bracket__confHeading--east {
+    order: 5;
+  }
+
+  .bracket__col--right {
+    order: 6;
   }
 }
 
@@ -495,22 +542,8 @@
 
 .bracket__col--final {
   position: relative;
-  padding-top: 2.75rem;
-  align-self: start;
-}
-
-.bracket__col--final::before {
-  content: 'Stanley Cup · Final';
-  position: absolute;
-  top: 0.9rem;
-  left: 1rem;
-  right: 1rem;
-  text-align: center;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
-  font-weight: 600;
+  padding-top: 0.5rem;
+  align-self: center;
 }
 
 @media (min-width: 961px) {
@@ -519,15 +552,60 @@
   }
 }
 
-.bracket__sideTitle {
-  font-size: 0.7rem;
+/* Round groups: mirror ESPN (first round as a grid, then later rounds) */
+.bracket__rounds {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.bracket__roundGroup {
+  min-width: 0;
+}
+
+.bracket__roundTitle {
+  font-size: 0.65rem;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: var(--text-muted);
   font-weight: 600;
-  margin: 0 0 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border);
+  margin: 0 0 0.5rem;
+}
+
+.bracket__roundTitle--center {
+  text-align: center;
+}
+
+.bracket__r1Grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 0.6rem;
+  align-items: start;
+}
+
+@media (max-width: 520px) {
+  .bracket__r1Grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bracket__r2Row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 0.6rem;
+  align-items: start;
+}
+
+@media (max-width: 520px) {
+  .bracket__r2Row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Compact matchup cell (per-card round title removed) */
+.game-card--bracket {
+  padding: 0.5rem 0.55rem 0.6rem;
+  margin-bottom: 0;
 }
 
 /* --- Game cards --- */
@@ -617,6 +695,18 @@
   border-color: var(--accent);
   background: var(--accent-muted);
   box-shadow: 0 0 0 1px var(--accent-border);
+}
+
+.team-btn--noninteractive {
+  cursor: default;
+}
+
+.team-btn--noninteractive:hover {
+  border-color: var(--border);
+}
+
+.team-btn--noninteractive.team-btn--selected:hover {
+  border-color: var(--accent);
 }
 
 .team-btn:not(:disabled):hover {
@@ -760,6 +850,33 @@
   font-weight: 700;
   font-size: 0.95rem;
   color: var(--accent);
+}
+
+.standings__scoreInput {
+  width: 4.5rem;
+  max-width: 100%;
+  padding: 0.25rem 0.35rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.standings__scoreInput:hover {
+  border-color: var(--border);
+  background: var(--bg-elevated);
+}
+
+.standings__scoreInput:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-border);
 }
 
 @media (max-width: 560px) {

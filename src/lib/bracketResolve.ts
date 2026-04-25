@@ -1,4 +1,4 @@
-import { teamByAbbr } from '../config/bracket-2026'
+import { GAMES, teamByAbbr } from '../config/bracket-2026'
 import type { BracketGame, Picks, Team } from '../config/bracketTypes'
 
 export function getSlotTeams(
@@ -19,6 +19,37 @@ function slotFromFeed(feedGameId: string, state: Picks): Team | null {
   const w = state[feedGameId] ?? null
   if (w == null || w === '') return null
   return teamByAbbr.get(w) ?? null
+}
+
+/**
+ * Clears knockout official winners when either feeder matchup has no winner
+ * yet, so saved state stays consistent with the tree (e.g. g2 undecided ⇒
+ * g9/g13/g15 cannot stand alone).
+ */
+export function coerceOfficialResultsByFeeds(
+  results: Picks,
+  games: readonly BracketGame[] = GAMES,
+): Picks {
+  const out: Picks = { ...results }
+  let changed = true
+  let guard = 0
+  while (changed && guard < 24) {
+    guard++
+    changed = false
+    for (const g of games) {
+      if (g.kind !== 'ko') continue
+      const [a, b] = g.feeds
+      const aw = out[a] ?? null
+      const bw = out[b] ?? null
+      const feedOpen =
+        aw == null || aw === '' || bw == null || bw === ''
+      if (feedOpen && (out[g.id] ?? null) != null && out[g.id] !== '') {
+        out[g.id] = null
+        changed = true
+      }
+    }
+  }
+  return out
 }
 
 /**

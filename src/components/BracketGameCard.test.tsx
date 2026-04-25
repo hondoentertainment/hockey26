@@ -41,4 +41,21 @@ describe('BracketGameCard', () => {
     fireEvent.click(screen.getByTitle('Avalanche'))
     expect(onPick).toHaveBeenCalledWith('g1', 'COL')
   })
+
+  it('does not call onPick when interactive is false', () => {
+    const g = getGameById('g1')
+    if (!g) throw new Error('g1')
+    const onPick = vi.fn()
+    render(
+      <BracketGameCard
+        game={g}
+        state={{}}
+        mode="picks"
+        interactive={false}
+        onPick={onPick}
+      />,
+    )
+    fireEvent.click(screen.getByTitle('Avalanche'))
+    expect(onPick).not.toHaveBeenCalled()
+  })
 })

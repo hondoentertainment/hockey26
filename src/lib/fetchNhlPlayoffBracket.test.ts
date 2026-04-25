@@ -21,7 +21,7 @@ describe('fetchNhlPlayoffBracket', () => {
   })
 
   it('returns JSON when fetch succeeds', async () => {
-    const data = await fetchNhlPlayoffBracket(2025)
+    const data = await fetchNhlPlayoffBracket(2026)
     expect(data.series).toEqual(sample.series)
     expect(fetch).toHaveBeenCalled()
   })

@@ -93,6 +93,8 @@ for (let r = 1; r < aoa.length; r++) {
 const out = {
   $schemaNote: 'Regenerate: npm run participants:from-excel',
   source: relative(root, xlsxPath).replaceAll('\\', '/'),
+  /** Whose picks the site shows under “My picks”. Edit to another player id if needed. */
+  defaultPicksPlayerId: players[0] != null ? players[0].id : '1',
   players,
 }
 

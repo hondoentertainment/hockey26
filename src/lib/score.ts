@@ -18,6 +18,8 @@ export function scoreBracket(
   for (const g of games) {
     const pid = picks[g.id] ?? null
     const rid = results[g.id] ?? null
+    // No points until this slot has a decided winner (e.g. NHL sync leaves
+    // in-progress series null until four wins).
     if (rid == null || rid === '') continue
     if (pid != null && pid === rid) {
       const pts = POINTS_BY_ROUND[g.round]
