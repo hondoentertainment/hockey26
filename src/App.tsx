@@ -101,105 +101,121 @@ export default function App() {
   return (
     <div className="app">
       <header className="app__header">
-        <h1>Stanley Cup pool</h1>
-        <p className="app__sub">
-          Round scoring: 1 + 2 + 4 + 8 pts · max {MAX_SCORE} total. First round is
-          loaded from <code className="app__code">bracketFromExcel.json</code> (regenerate
-          from <code className="app__code">Hockey Tracking.xlsx</code> with{' '}
-          <code className="app__code">npm run pool:from-excel</code> (or{' '}
-          <code className="app__code">participants:from-excel</code> for the
-          standings only). Official
-          results can be synced from the NHL when a matchup matches a real series (
-          <code className="app__code">src/config/poolNhl.ts</code>).
+        <div className="app__titleRow">
+          <div>
+            <p className="app__eyebrow">Playoff pool</p>
+            <h1>Stanley Cup bracket</h1>
+          </div>
+          <div className="app__scoreCard">
+            <div className="score-total" aria-label="Your score">
+              <span className="score-total__label">Your score</span>
+              <span className="score-total__value" aria-live="polite">
+                {scored.total}
+              </span>
+              <span className="score-total__max">out of {MAX_SCORE} points</span>
+            </div>
+            <ul className="score-by-round" aria-label="Points by round">
+              <li>
+                R1 <strong>{scored.byRound[0]}</strong>
+              </li>
+              <li>
+                R2 <strong>{scored.byRound[1]}</strong>
+              </li>
+              <li>
+                R3 <strong>{scored.byRound[2]}</strong>
+              </li>
+              <li>
+                F <strong>{scored.byRound[3]}</strong>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <p className="app__lede">
+          Picks and official results use the same bracket. Scoring by round: 1 · 2 ·
+          4 · 8. Standings update from your official results and the pool Excel import.
         </p>
-        <div className="app__mode">
-          <span className="app__modeLabel">You are editing</span>
-          <div
-            className="segmented"
-            role="tablist"
-            aria-label="Picks or official results"
-          >
-            <button
-              type="button"
-              role="tab"
-              className={mode === 'picks' ? 'segmented__btn is-active' : 'segmented__btn'}
-              onClick={() => setMode('picks')}
+        <details className="app__meta">
+          <summary>Data sources &amp; dev commands</summary>
+          <p className="app__sub">
+            Regenerate the bracket and standings from the workbook:{' '}
+            <code className="app__code">Hockey Tracking.xlsx</code> →{' '}
+            <code className="app__code">npm run pool:from-excel</code> (or{' '}
+            <code className="app__code">bracket:from-excel</code> /{' '}
+            <code className="app__code">participants:from-excel</code> only). Official
+            NHL sync (when a matchup matches a real series) uses the path year in{' '}
+            <code className="app__code">src/config/poolNhl.ts</code>.
+          </p>
+        </details>
+        <div className="app__toolbar">
+          <div className="app__mode">
+            <span className="app__modeLabel">Editing</span>
+            <div
+              className="segmented"
+              role="tablist"
+              aria-label="Picks or official results"
             >
-              My picks
-            </button>
-            <button
-              type="button"
-              role="tab"
-              className={
-                mode === 'results' ? 'segmented__btn is-active' : 'segmented__btn'
-              }
-              onClick={() => setMode('results')}
-            >
-              Official results
-            </button>
-          </div>
-        </div>
-        <div className="app__score">
-          <div className="score-total">
-            <span className="score-total__label">Your score</span>
-            <span className="score-total__value" aria-live="polite">
-              {scored.total} / {MAX_SCORE}
-            </span>
-          </div>
-          <ul className="score-by-round" aria-label="Points by round">
-            <li>
-              R1 <strong>{scored.byRound[0]}</strong>
-            </li>
-            <li>
-              R2 <strong>{scored.byRound[1]}</strong>
-            </li>
-            <li>
-              R3 <strong>{scored.byRound[2]}</strong>
-            </li>
-            <li>
-              Final <strong>{scored.byRound[3]}</strong>
-            </li>
-          </ul>
-        </div>
-        {mode === 'results' && (
-          <div className="app__nhl" aria-live="polite">
-            <button
-              type="button"
-              className="btn-primary"
-              disabled={nhlBusy}
-              onClick={async () => {
-                if (
-                  !confirm(
-                    'Replace official results using completed series from the NHL (api-web.nhle.com)?',
-                  )
-                ) {
-                  return
+              <button
+                type="button"
+                role="tab"
+                className={mode === 'picks' ? 'segmented__btn is-active' : 'segmented__btn'}
+                onClick={() => setMode('picks')}
+                aria-selected={mode === 'picks'}
+              >
+                My picks
+              </button>
+              <button
+                type="button"
+                role="tab"
+                className={
+                  mode === 'results' ? 'segmented__btn is-active' : 'segmented__btn'
                 }
-                setNhlBusy(true)
-                setNhlMessage(null)
-                try {
-                  const data = await fetchNhlPlayoffBracket(POOL_NHL_PATH_YEAR)
-                  const next = buildOfficialResultsFromNhlBracket(data, GAMES)
-                  setResults(next)
-                  setNhlMessage('Official results updated from NHL bracket.')
-                } catch (e) {
-                  setNhlMessage(
-                    e instanceof Error
-                      ? e.message
-                      : 'Could not load the NHL bracket.',
-                  )
-                } finally {
-                  setNhlBusy(false)
-                }
-              }}
-            >
-              {nhlBusy
-                ? 'Loading NHL data…'
-                : `Sync from NHL (year ${POOL_NHL_PATH_YEAR})`}
-            </button>
-            {nhlMessage ? <p className="app__nhlMsg">{nhlMessage}</p> : null}
+                onClick={() => setMode('results')}
+                aria-selected={mode === 'results'}
+              >
+                Official results
+              </button>
+            </div>
           </div>
-        )}
+          {mode === 'results' && (
+            <div className="app__nhl" aria-live="polite">
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={nhlBusy}
+                onClick={async () => {
+                  if (
+                    !confirm(
+                      'Replace official results using completed series from the NHL (api-web.nhle.com)?',
+                    )
+                  ) {
+                    return
+                  }
+                  setNhlBusy(true)
+                  setNhlMessage(null)
+                  try {
+                    const data = await fetchNhlPlayoffBracket(POOL_NHL_PATH_YEAR)
+                    const next = buildOfficialResultsFromNhlBracket(data, GAMES)
+                    setResults(next)
+                    setNhlMessage('Official results updated from NHL bracket.')
+                  } catch (e) {
+                    setNhlMessage(
+                      e instanceof Error
+                        ? e.message
+                        : 'Could not load the NHL bracket.',
+                    )
+                  } finally {
+                    setNhlBusy(false)
+                  }
+                }}
+              >
+                {nhlBusy
+                  ? 'Loading…'
+                  : `Sync from NHL (year ${POOL_NHL_PATH_YEAR})`}
+              </button>
+            </div>
+          )}
+        </div>
+        {nhlMessage ? <p className="app__nhlMsg">{nhlMessage}</p> : null}
       </header>
 
       <main className="bracket">
