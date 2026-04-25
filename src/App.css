@@ -1005,6 +1005,93 @@
   box-shadow: 0 0 0 2px var(--accent-border);
 }
 
+/* --- Admin series correctness audit --- */
+.series-audit {
+  margin: 1.5rem 0 0;
+  background: var(--surface);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-lg);
+  padding: 1.15rem 1.25rem 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.series-audit__list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.series-audit__row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 12rem) minmax(12rem, 1fr);
+  gap: 0.5rem 0.85rem;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.series-audit__label {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.series-audit__game {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.series-audit__winner {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.series-audit__barTrack {
+  position: relative;
+  min-height: 2rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.series-audit__bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  min-width: 0.35rem;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+}
+
+.series-audit__count {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-h);
+  text-shadow: 0 1px 0 var(--surface);
+}
+
+.series-audit__names {
+  grid-column: 2;
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
 /* --- Admin raw sheet --- */
 .raw-sheet {
   margin: 1.5rem 0 0;
@@ -1118,6 +1205,14 @@
 
   .standings--admin .standings__name {
     min-width: 9rem;
+  }
+
+  .series-audit__row {
+    grid-template-columns: 1fr;
+  }
+
+  .series-audit__names {
+    grid-column: 1;
   }
 }
 

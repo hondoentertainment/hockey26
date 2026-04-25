@@ -25,6 +25,7 @@ import {
 import { fetchNhlPlayoffBracket } from './lib/fetchNhlPlayoffBracket'
 import { buildOfficialResultsFromNhlBracket } from './lib/syncNhlToPoolResults'
 import { buildLeaderboard } from './lib/rankings'
+import { buildSeriesCorrectAudit } from './lib/seriesCorrectAudit'
 import type { ParticipantsFile } from './config/participantsFromExcel.schema'
 import poolFile from './config/participantsFromExcel.json' with { type: 'json' }
 import officialResultsBaseline from './config/officialResultsBaseline.json' with { type: 'json' }
@@ -53,6 +54,7 @@ const RAW_PICK_COLUMNS = [
   ['3B', 'g14'],
   ['4', 'g15'],
 ] as const
+const ROUND_LABELS = ['R1', 'R2', 'R3', 'Final'] as const
 
 type RoundIndex = 0 | 1 | 2 | 3
 type ScoreField = 'total' | RoundIndex
@@ -157,6 +159,10 @@ function parseScoreInput(raw: string): number | null {
   return Math.max(0, Math.trunc(value))
 }
 
+function formatPercent(value: number): string {
+  return `${Math.round(value * 100)}%`
+}
+
 export default function App() {
   const [page, setPage] = useState<Page>(() => getPageFromHash())
   const [adminAccountEmail, setAdminAccountEmail] = useState<string | null>(
@@ -190,6 +196,11 @@ export default function App() {
   const rankingsById = useMemo(
     () => new Map(rankings.map((row) => [row.id, row])),
     [rankings],
+  )
+
+  const seriesCorrectAudit = useMemo(
+    () => buildSeriesCorrectAudit(poolPlayers, results, GAMES),
+    [results],
   )
 
   const hasOfficialResults = useMemo(
@@ -826,6 +837,63 @@ export default function App() {
           </table>
         </div>
       </section>
+
+      {canUseDataActions ? (
+        <section className="series-audit" aria-labelledby="series-audit-title">
+          <h2
+            className="standings__title standings__title--emph"
+            id="series-audit-title"
+          >
+            Correct series audit
+          </h2>
+          <p className="standings__sub">
+            Counts use raw imported picks against official winners before admin
+            score edits. Each bar shows how many entries correctly picked that
+            decided series, plus the matching names.
+          </p>
+          {seriesCorrectAudit.length > 0 ? (
+            <div className="series-audit__list" role="list">
+              {seriesCorrectAudit.map((row) => (
+                <article
+                  className="series-audit__row"
+                  key={row.gameId}
+                  role="listitem"
+                >
+                  <div className="series-audit__label">
+                    <span className="series-audit__game">
+                      {ROUND_LABELS[row.round]} · {row.gameId.toUpperCase()}
+                    </span>
+                    <span className="series-audit__winner">
+                      Winner: {row.winner}
+                    </span>
+                  </div>
+                  <div
+                    className="series-audit__barTrack"
+                    aria-label={`${row.correctCount} of ${row.totalEntries} entries picked ${row.winner} for ${row.gameId.toUpperCase()}`}
+                  >
+                    <div
+                      className="series-audit__bar"
+                      style={{ width: formatPercent(row.correctPercent) }}
+                    />
+                    <span className="series-audit__count">
+                      {row.correctCount}/{row.totalEntries}
+                    </span>
+                  </div>
+                  <p className="series-audit__names">
+                    {row.correctNames.length > 0
+                      ? row.correctNames.join(', ')
+                      : 'No correct picks.'}
+                  </p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="standings__note">
+              Set at least one official series winner to populate this audit.
+            </p>
+          )}
+        </section>
+      ) : null}
 
       {canUseDataActions ? (
         <section
