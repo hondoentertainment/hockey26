@@ -1,0 +1,266 @@
+.app {
+  text-align: left;
+  padding: 0 1rem 2rem;
+  max-width: 68rem;
+  margin: 0 auto;
+}
+
+.app__header {
+  padding: 1.5rem 0 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.25rem;
+}
+
+.app h1 {
+  font-size: 1.75rem;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.03em;
+}
+
+.app__sub {
+  font-size: 0.95rem;
+  color: var(--text);
+  margin: 0 0 1rem;
+}
+
+.app__mode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.app__modeLabel {
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.segmented {
+  display: inline-flex;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--code-bg, rgba(0, 0, 0, 0.04));
+}
+
+.segmented__btn {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.45rem 0.9rem;
+  border: none;
+  background: transparent;
+  color: var(--text-h, inherit);
+  cursor: pointer;
+}
+
+.segmented__btn + .segmented__btn {
+  border-left: 1px solid var(--border);
+}
+
+.segmented__btn.is-active {
+  background: var(--accent-bg, rgba(170, 59, 255, 0.12));
+  color: var(--text-h, inherit);
+}
+
+.app__score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1.25rem 2rem;
+}
+
+.score-total__label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+
+.score-total__value {
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+
+.score-by-round {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.score-by-round strong {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.bracket {
+  display: grid;
+  grid-template-columns: 1fr minmax(9rem, 14rem) 1fr;
+  gap: 1rem 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .bracket {
+    grid-template-columns: 1fr;
+  }
+
+  .bracket__col--final {
+    order: 3;
+  }
+}
+
+.bracket__sideTitle {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text);
+  margin: 0 0 0.5rem;
+}
+
+.bracket__col--final {
+  position: relative;
+  padding-top: 2.25rem;
+}
+
+.bracket__col--final::before {
+  content: 'Championship';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+@media (min-width: 901px) {
+  .bracket__col--final {
+    align-self: center;
+  }
+}
+
+.game-card {
+  background: var(--code-bg, #f4f3ec);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.75rem 0.75rem;
+  margin-bottom: 0.65rem;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+.game-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.4rem;
+}
+
+.game-card__title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.game-card__id {
+  font-size: 0.7rem;
+  color: var(--text);
+  opacity: 0.8;
+  font-family: var(--mono, ui-monospace, monospace);
+}
+
+.game-card__teams {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.game-card__vs {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--text);
+  opacity: 0.7;
+  line-height: 1;
+}
+
+.team-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--border);
+  background: var(--bg, #fff);
+  color: var(--text-h);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+
+.team-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.team-btn--selected {
+  border-color: var(--accent-border, #c4b5fd);
+  background: var(--accent-bg, rgba(99, 102, 241, 0.12));
+}
+
+.team-btn__abbr {
+  font-weight: 700;
+  font-size: 0.95rem;
+  min-width: 2.25rem;
+  font-family: var(--mono, ui-monospace, monospace);
+}
+
+.team-btn__name {
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.app__foot {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.app__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.btn-ghost {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.btn-ghost:hover {
+  border-color: var(--accent-border);
+  color: var(--text-h);
+}
