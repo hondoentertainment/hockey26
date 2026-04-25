@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   GAMES,
-  MAX_SCORE,
   allGameIds,
   getGameById,
 } from './config/bracket-2026'
@@ -25,8 +24,6 @@ import {
 import { fetchNhlPlayoffBracket } from './lib/fetchNhlPlayoffBracket'
 import { buildOfficialResultsFromNhlBracket } from './lib/syncNhlToPoolResults'
 import { buildLeaderboard } from './lib/rankings'
-import { scoreBracket } from './lib/score'
-import { getSitePicksSource } from './lib/sitePicksFromPool'
 import type { ParticipantsFile } from './config/participantsFromExcel.schema'
 import poolFile from './config/participantsFromExcel.json' with { type: 'json' }
 import officialResultsBaseline from './config/officialResultsBaseline.json' with { type: 'json' }
@@ -37,7 +34,6 @@ const { players: poolPlayers } = poolData
 
 const FINAL_ID = 'g15' as const
 
-type EditorMode = 'picks' | 'results'
 type RoundIndex = 0 | 1 | 2 | 3
 type ScoreField = 'total' | RoundIndex
 
@@ -110,14 +106,9 @@ function parseScoreInput(raw: string): number | null {
 }
 
 export default function App() {
-  const { picks: sitePicks, name: sitePicksName } = useMemo(
-    () => getSitePicksSource(poolData),
-    [],
-  )
   const [results, setResults] = useState<Picks>(() =>
     mergeOfficialResultsBaseline(loadResults()),
   )
-  const [mode, setMode] = useState<EditorMode>('picks')
   const [nhlError, setNhlError] = useState<string | null>(null)
   const [nhlLastSyncAt, setNhlLastSyncAt] = useState<string | null>(
     loadNhlLastSyncAt,
@@ -125,11 +116,6 @@ export default function App() {
   const [nhlBusy, setNhlBusy] = useState(false)
   const [scoreOverrides, setScoreOverrides] =
     useState<ScoreOverrides>(loadScoreOverrides)
-
-  const scored = useMemo(
-    () => scoreBracket(sitePicks, results, GAMES),
-    [sitePicks, results],
-  )
 
   const calculatedRankings = useMemo(
     () => buildLeaderboard(poolPlayers, results, GAMES),
@@ -205,20 +191,7 @@ export default function App() {
     [],
   )
 
-  const stateForMode = mode === 'picks' ? sitePicks : results
-  const bracketInteractive = mode === 'results'
-
-  const goPicks = useCallback(() => {
-    setMode('picks')
-    window.requestAnimationFrame(() => {
-      document
-        .getElementById('bracket-main')
-        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
-  }, [])
-
   const goOfficial = useCallback(() => {
-    setMode('results')
     window.requestAnimationFrame(() => {
       document
         .getElementById('region-official-results')
@@ -240,22 +213,11 @@ export default function App() {
             <button
               type="button"
               className="app__inlistLink"
-              onClick={goPicks}
-            >
-              My picks
-            </button>
-            {` show ${sitePicksName}'s bracket from the pool sheet (read-only here).`}
-          </li>
-          <li>
-            In{' '}
-            <button
-              type="button"
-              className="app__inlistLink"
               onClick={goOfficial}
             >
               Official results
             </button>
-            , set or{' '}
+            {` show what actually happened. Update them manually or `}
             <button
               type="button"
               className="app__inlistLink"
@@ -263,7 +225,7 @@ export default function App() {
             >
               sync from the NHL
             </button>
-            {` — that's the real world and drives the leaderboard and ${sitePicksName}'s score (points accrue only after each series is decided).`}
+            {` after each series is decided.`}
           </li>
           <li>
             <button
@@ -273,32 +235,16 @@ export default function App() {
             >
               Pool standings
             </button>
-            {` show `}
-            <em>everyone’s</em>
-            {` totals after (2).`}
+            {` show the results for every already-picked bracket; admins can adjust the numbers directly in the grid.`}
           </li>
         </ol>
         <div className="app__titleRow">
           <div>
             <p className="app__eyebrow">Playoff pool</p>
-            <h1>Stanley Cup bracket</h1>
+            <h1>Stanley Cup pool results</h1>
           </div>
-          <div className="app__headerScoreCol">
-            <div className="app__scoreCard">
-              <div
-                className="score-total"
-                aria-label={`${sitePicksName} score vs official results`}
-              >
-                <span className="score-total__label">
-                  {sitePicksName} · score
-                </span>
-                <span className="score-total__value" aria-live="polite">
-                  {scored.total}
-                </span>
-                <span className="score-total__max">out of {MAX_SCORE} points</span>
-              </div>
-            </div>
-            {!hasOfficialResults ? (
+          {!hasOfficialResults ? (
+            <div className="app__headerScoreCol">
               <div
                 className="app__noOfficialBanner"
                 role="status"
@@ -326,14 +272,13 @@ export default function App() {
                   </button>
                 </div>
               </div>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
         <p className="app__lede">
-          Scoring by round: 1–2–4–8. The total above is {sitePicksName}'s score
-          vs. official results — you only earn points for a slot once that
-          series is decided (NHL sync applies when a real series hits four
-          wins). The{' '}
+          Scoring by round: 1-2-4-8. This page shows the official bracket and
+          compiled results for every already-picked bracket in the import.
+          Points appear once each series is decided. The{' '}
           <button
             type="button"
             className="app__inlistLink"
@@ -341,7 +286,7 @@ export default function App() {
           >
             pool standings
           </button>
-          {` rank everyone in the import.`}
+          {` rank everyone in the import, with admin edits in the grid taking precedence.`}
         </p>
         <details className="app__meta">
           <summary>Data sources &amp; dev commands</summary>
@@ -352,92 +297,56 @@ export default function App() {
             <code className="app__code">bracket:from-excel</code> /{' '}
             <code className="app__code">participants:from-excel</code> only). Official
             NHL sync (when a matchup matches a real series) uses the path year in{' '}
-            <code className="app__code">src/config/poolNhl.ts</code>. Which row powers
-            the site bracket is{' '}
-            <code className="app__code">defaultPicksPlayerId</code> in{' '}
-            <code className="app__code">participantsFromExcel.json</code>.
+            <code className="app__code">src/config/poolNhl.ts</code>.
           </p>
         </details>
         <div id="region-official-results" className="app__toolbar">
           <div className="app__mode">
-            <span className="app__modeLabel">Editing</span>
-            <div
-              className="segmented"
-              role="tablist"
-              aria-label="Picks or official results"
-            >
-              <button
-                type="button"
-                role="tab"
-                className={mode === 'picks' ? 'segmented__btn is-active' : 'segmented__btn'}
-                onClick={() => setMode('picks')}
-                aria-selected={mode === 'picks'}
-              >
-                My picks
-              </button>
-              <button
-                type="button"
-                role="tab"
-                className={
-                  mode === 'results'
-                    ? 'segmented__btn segmented__btn--em is-active'
-                    : 'segmented__btn segmented__btn--em'
-                }
-                onClick={() => setMode('results')}
-                aria-selected={mode === 'results'}
-                title="Decided games only: set each winner after the series is complete, or sync from the NHL (four wins to a series)"
-              >
-                Official results
-              </button>
-            </div>
+            <span className="app__modeLabel">Official bracket</span>
           </div>
-          {mode === 'results' && (
-            <div className="app__nhl" aria-live="polite">
-              <button
-                type="button"
-                className="btn-primary"
-                id="sync-nhl-button"
-                disabled={nhlBusy}
-                onClick={async () => {
-                  if (
-                    !confirm(
-                      'Replace official results using completed series from the NHL (api-web.nhle.com)?',
-                    )
-                  ) {
-                    return
-                  }
-                  setNhlBusy(true)
-                  setNhlError(null)
-                  try {
-                    const data = await fetchNhlPlayoffBracket(POOL_NHL_PATH_YEAR)
-                    const next = buildOfficialResultsFromNhlBracket(data, GAMES)
-                    setResults(next)
-                    const at = new Date().toISOString()
-                    saveNhlLastSyncAt(at)
-                    setNhlLastSyncAt(at)
-                  } catch (e) {
-                    setNhlError(
-                      e instanceof Error
-                        ? e.message
-                        : 'Could not load the NHL bracket.',
-                    )
-                  } finally {
-                    setNhlBusy(false)
-                  }
-                }}
-              >
-                {nhlBusy
-                  ? 'Loading…'
-                  : `Sync from NHL (year ${POOL_NHL_PATH_YEAR})`}
-              </button>
-            </div>
-          )}
+          <div className="app__nhl" aria-live="polite">
+            <button
+              type="button"
+              className="btn-primary"
+              id="sync-nhl-button"
+              disabled={nhlBusy}
+              onClick={async () => {
+                if (
+                  !confirm(
+                    'Replace official results using completed series from the NHL (api-web.nhle.com)?',
+                  )
+                ) {
+                  return
+                }
+                setNhlBusy(true)
+                setNhlError(null)
+                try {
+                  const data = await fetchNhlPlayoffBracket(POOL_NHL_PATH_YEAR)
+                  const next = buildOfficialResultsFromNhlBracket(data, GAMES)
+                  setResults(next)
+                  const at = new Date().toISOString()
+                  saveNhlLastSyncAt(at)
+                  setNhlLastSyncAt(at)
+                } catch (e) {
+                  setNhlError(
+                    e instanceof Error
+                      ? e.message
+                      : 'Could not load the NHL bracket.',
+                  )
+                } finally {
+                  setNhlBusy(false)
+                }
+              }}
+            >
+              {nhlBusy
+                ? 'Loading…'
+                : `Sync from NHL (year ${POOL_NHL_PATH_YEAR})`}
+            </button>
+          </div>
         </div>
         <p className="app__modeHint">
-          My picks = {sitePicksName}'s bracket from the Excel import (not editable
-          on this page). Official results = what actually happened; they drive the
-          pool standings and the score above. In-progress series stay empty until
-          someone clinches, so points lag the live schedule.
+          Official results drive the pool standings below. In-progress series
+          stay empty until someone clinches, so points lag the live schedule.
         </p>
         {nhlLastSyncAt ? (
           <p className="app__nhlTrust" role="status">
@@ -474,10 +383,10 @@ export default function App() {
                     <BracketGameCard
                       key={id}
                       game={g}
-                      state={stateForMode}
-                      mode={mode}
+                      state={results}
+                      mode="results"
                       layout="bracket"
-                      interactive={bracketInteractive}
+                      interactive
                       onPick={onResults}
                     />
                   )
@@ -494,10 +403,10 @@ export default function App() {
                     <BracketGameCard
                       key={id}
                       game={g}
-                      state={stateForMode}
-                      mode={mode}
+                      state={results}
+                      mode="results"
                       layout="bracket"
-                      interactive={bracketInteractive}
+                      interactive
                       onPick={onResults}
                     />
                   )
@@ -513,10 +422,10 @@ export default function App() {
                   <BracketGameCard
                     key="g13"
                     game={g}
-                    state={stateForMode}
-                    mode={mode}
+                    state={results}
+                    mode="results"
                     layout="bracket"
-                    interactive={bracketInteractive}
+                    interactive
                     onPick={onResults}
                   />
                 )
@@ -536,10 +445,10 @@ export default function App() {
               <BracketGameCard
                 key={FINAL_ID}
                 game={g}
-                state={stateForMode}
-                mode={mode}
+                state={results}
+                mode="results"
                 layout="bracket"
-                interactive={bracketInteractive}
+                interactive
                 onPick={onResults}
               />
             )
@@ -558,10 +467,10 @@ export default function App() {
                     <BracketGameCard
                       key={id}
                       game={g}
-                      state={stateForMode}
-                      mode={mode}
+                      state={results}
+                      mode="results"
                       layout="bracket"
-                      interactive={bracketInteractive}
+                      interactive
                       onPick={onResults}
                     />
                   )
@@ -578,10 +487,10 @@ export default function App() {
                     <BracketGameCard
                       key={id}
                       game={g}
-                      state={stateForMode}
-                      mode={mode}
+                      state={results}
+                      mode="results"
                       layout="bracket"
-                      interactive={bracketInteractive}
+                      interactive
                       onPick={onResults}
                     />
                   )
@@ -597,10 +506,10 @@ export default function App() {
                   <BracketGameCard
                     key="g14"
                     game={g}
-                    state={stateForMode}
-                    mode={mode}
+                    state={results}
+                    mode="results"
                     layout="bracket"
-                    interactive={bracketInteractive}
+                    interactive
                     onPick={onResults}
                   />
                 )
