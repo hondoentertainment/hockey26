@@ -23,6 +23,52 @@
   margin: 0 0 1rem;
 }
 
+.app__code {
+  font-size: 0.82em;
+  padding: 0.1em 0.35em;
+  border-radius: 0.25em;
+  background: var(--code-bg, rgba(0, 0, 0, 0.06));
+}
+
+.app__nhl {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+}
+
+.app__nhlMsg {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text);
+  max-width: 36rem;
+}
+
+.btn-primary {
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--accent-border, #a78bfa);
+  background: var(--accent-bg, rgba(99, 102, 241, 0.2));
+  color: var(--text-h);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .app__mode {
   display: flex;
   flex-wrap: wrap;

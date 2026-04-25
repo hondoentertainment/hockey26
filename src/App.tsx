@@ -8,7 +8,10 @@ import {
 import type { Picks } from './config/bracketTypes'
 import { BracketGameCard } from './components/BracketGameCard'
 import { dependentGameIds } from './lib/bracketResolve'
+import { POOL_NHL_PATH_YEAR } from './config/poolNhl'
 import { loadPicks, loadResults, savePicks, saveResults } from './lib/persistence'
+import { fetchNhlPlayoffBracket } from './lib/fetchNhlPlayoffBracket'
+import { buildOfficialResultsFromNhlBracket } from './lib/syncNhlToPoolResults'
 import { scoreBracket } from './lib/score'
 import './App.css'
 
@@ -44,6 +47,8 @@ export default function App() {
   const [picks, setPicks] = useState<Picks>(loadPicks)
   const [results, setResults] = useState<Picks>(loadResults)
   const [mode, setMode] = useState<EditorMode>('picks')
+  const [nhlMessage, setNhlMessage] = useState<string | null>(null)
+  const [nhlBusy, setNhlBusy] = useState(false)
 
   const scored = useMemo(
     () => scoreBracket(picks, results, GAMES),
@@ -83,7 +88,10 @@ export default function App() {
       <header className="app__header">
         <h1>Stanley Cup pool</h1>
         <p className="app__sub">
-          Round scoring: 1 + 2 + 4 + 8 pts · max {MAX_SCORE} total
+          Round scoring: 1 + 2 + 4 + 8 pts · max {MAX_SCORE} total. Official results can
+          be filled from the NHL’s published bracket when a pool matchup matches a
+          real completed series (set path year in{' '}
+          <code className="app__code">src/config/poolNhl.ts</code>).
         </p>
         <div className="app__mode">
           <span className="app__modeLabel">You are editing</span>
@@ -134,6 +142,45 @@ export default function App() {
             </li>
           </ul>
         </div>
+        {mode === 'results' && (
+          <div className="app__nhl" aria-live="polite">
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={nhlBusy}
+              onClick={async () => {
+                if (
+                  !confirm(
+                    'Replace official results using completed series from the NHL (api-web.nhle.com)?',
+                  )
+                ) {
+                  return
+                }
+                setNhlBusy(true)
+                setNhlMessage(null)
+                try {
+                  const data = await fetchNhlPlayoffBracket(POOL_NHL_PATH_YEAR)
+                  const next = buildOfficialResultsFromNhlBracket(data, GAMES)
+                  setResults(next)
+                  setNhlMessage('Official results updated from NHL bracket.')
+                } catch (e) {
+                  setNhlMessage(
+                    e instanceof Error
+                      ? e.message
+                      : 'Could not load the NHL bracket.',
+                  )
+                } finally {
+                  setNhlBusy(false)
+                }
+              }}
+            >
+              {nhlBusy
+                ? 'Loading NHL data…'
+                : `Sync from NHL (year ${POOL_NHL_PATH_YEAR})`}
+            </button>
+            {nhlMessage ? <p className="app__nhlMsg">{nhlMessage}</p> : null}
+          </div>
+        )}
       </header>
 
       <main className="bracket">

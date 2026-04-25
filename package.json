@@ -11,7 +11,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "nhl:bracket:fetch": "node scripts/fetch-nhl-bracket.mjs"
   },
   "dependencies": {
     "react": "^19.2.5",
