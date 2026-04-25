@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { FormEvent } from 'react'
 import {
   GAMES,
   allGameIds,
@@ -33,9 +34,43 @@ const poolData = poolFile as ParticipantsFile
 const { players: poolPlayers } = poolData
 
 const FINAL_ID = 'g15' as const
+const ADMIN_EMAIL = 'hondo4185@gmail.com'
+const ADMIN_EMAIL_STORAGE_KEY = 'hockey26.adminAccountEmail'
 
 type RoundIndex = 0 | 1 | 2 | 3
 type ScoreField = 'total' | RoundIndex
+type Page = 'public' | 'admin'
+
+function normalizeAccountEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
+function getPageFromHash(): Page {
+  if (typeof window === 'undefined') return 'public'
+  return window.location.hash.toLowerCase() === '#admin' ? 'admin' : 'public'
+}
+
+function loadAdminAccountEmail(): string | null {
+  if (typeof localStorage === 'undefined') return null
+  try {
+    return localStorage.getItem(ADMIN_EMAIL_STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+function saveAdminAccountEmail(email: string | null): void {
+  if (typeof localStorage === 'undefined') return
+  try {
+    if (email == null) {
+      localStorage.removeItem(ADMIN_EMAIL_STORAGE_KEY)
+    } else {
+      localStorage.setItem(ADMIN_EMAIL_STORAGE_KEY, email)
+    }
+  } catch {
+    // ignore quota / private mode
+  }
+}
 
 function formatNhlLastSyncAt(iso: string): string {
   const d = new Date(iso)
@@ -106,6 +141,14 @@ function parseScoreInput(raw: string): number | null {
 }
 
 export default function App() {
+  const [page, setPage] = useState<Page>(() => getPageFromHash())
+  const [adminAccountEmail, setAdminAccountEmail] = useState<string | null>(
+    loadAdminAccountEmail,
+  )
+  const [adminEmailInput, setAdminEmailInput] = useState(
+    () => loadAdminAccountEmail() ?? '',
+  )
+  const [adminEmailError, setAdminEmailError] = useState<string | null>(null)
   const [results, setResults] = useState<Picks>(() =>
     mergeOfficialResultsBaseline(loadResults()),
   )
@@ -131,6 +174,18 @@ export default function App() {
     () => allGameIds.some((id) => (results[id] ?? null) != null),
     [results],
   )
+
+  const isAdminAccount =
+    normalizeAccountEmail(adminAccountEmail ?? '') === ADMIN_EMAIL
+  const isAdminPage = page === 'admin'
+  const canUseDataActions = isAdminPage && isAdminAccount
+
+  useEffect(() => {
+    const onHashChange = () => setPage(getPageFromHash())
+    window.addEventListener('hashchange', onHashChange)
+    onHashChange()
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
 
   useEffect(() => {
     saveResults(results)
@@ -205,9 +260,88 @@ export default function App() {
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
 
+  const goPublic = useCallback(() => {
+    window.location.hash = ''
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
+
+  const goAdmin = useCallback(() => {
+    window.location.hash = 'admin'
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
+
+  const onAdminSignIn = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      const trimmed = adminEmailInput.trim()
+      if (normalizeAccountEmail(trimmed) !== ADMIN_EMAIL) {
+        setAdminEmailError('That account is not allowed to access admin tools.')
+        return
+      }
+
+      saveAdminAccountEmail(trimmed)
+      setAdminAccountEmail(trimmed)
+      setAdminEmailError(null)
+    },
+    [adminEmailInput],
+  )
+
+  const onAdminSignOut = useCallback(() => {
+    saveAdminAccountEmail(null)
+    setAdminAccountEmail(null)
+    setAdminEmailInput('')
+  }, [])
+
+  if (isAdminPage && !isAdminAccount) {
+    return (
+      <AdminGate
+        email={adminEmailInput}
+        error={adminEmailError}
+        onEmailChange={(value) => {
+          setAdminEmailInput(value)
+          setAdminEmailError(null)
+        }}
+        onSubmit={onAdminSignIn}
+        onBack={goPublic}
+      />
+    )
+  }
+
   return (
     <div className="app">
       <header className="app__header">
+        <nav className="app__nav" aria-label="Page navigation">
+          <button
+            type="button"
+            className={
+              isAdminPage ? 'app__navLink' : 'app__navLink app__navLink--active'
+            }
+            onClick={goPublic}
+          >
+            Public results
+          </button>
+          <button
+            type="button"
+            className={
+              isAdminPage ? 'app__navLink app__navLink--active' : 'app__navLink'
+            }
+            onClick={goAdmin}
+          >
+            Admin
+          </button>
+          {canUseDataActions ? (
+            <span className="app__adminStatus">
+              Signed in as {adminAccountEmail}
+              <button
+                type="button"
+                className="app__adminSignOut"
+                onClick={onAdminSignOut}
+              >
+                Sign out
+              </button>
+            </span>
+          ) : null}
+        </nav>
         <ol className="app__howTo">
           <li>
             <button
@@ -217,15 +351,9 @@ export default function App() {
             >
               Official results
             </button>
-            {` show what actually happened. Update them manually or `}
-            <button
-              type="button"
-              className="app__inlistLink"
-              onClick={goOfficial}
-            >
-              sync from the NHL
-            </button>
-            {` after each series is decided.`}
+            {canUseDataActions
+              ? ` show what actually happened. Update them manually or sync from the NHL after each series is decided.`
+              : ` show what actually happened. Data updates live on the admin page.`}
           </li>
           <li>
             <button
@@ -235,7 +363,9 @@ export default function App() {
             >
               Pool standings
             </button>
-            {` show the results for every already-picked bracket; admins can adjust the numbers directly in the grid.`}
+            {canUseDataActions
+              ? ` show the results for every already-picked bracket; admins can adjust the numbers directly in the grid.`
+              : ` show the results for every already-picked bracket in read-only mode.`}
           </li>
         </ol>
         <div className="app__titleRow">
@@ -286,67 +416,76 @@ export default function App() {
           >
             pool standings
           </button>
-          {` rank everyone in the import, with admin edits in the grid taking precedence.`}
+          {canUseDataActions
+            ? ` rank everyone in the import, with admin edits in the grid taking precedence.`
+            : ` rank everyone in the import.`}
         </p>
-        <details className="app__meta">
-          <summary>Data sources &amp; dev commands</summary>
-          <p className="app__sub">
-            Regenerate the bracket and standings from the workbook:{' '}
-            <code className="app__code">Hockey Tracking.xlsx</code> →{' '}
-            <code className="app__code">npm run pool:from-excel</code> (or{' '}
-            <code className="app__code">bracket:from-excel</code> /{' '}
-            <code className="app__code">participants:from-excel</code> only). Official
-            NHL sync (when a matchup matches a real series) uses the path year in{' '}
-            <code className="app__code">src/config/poolNhl.ts</code>.
-          </p>
-        </details>
+        {canUseDataActions ? (
+          <details className="app__meta">
+            <summary>Data sources &amp; dev commands</summary>
+            <p className="app__sub">
+              Regenerate the bracket and standings from the workbook:{' '}
+              <code className="app__code">Hockey Tracking.xlsx</code> →{' '}
+              <code className="app__code">npm run pool:from-excel</code> (or{' '}
+              <code className="app__code">bracket:from-excel</code> /{' '}
+              <code className="app__code">participants:from-excel</code> only).
+              Official NHL sync (when a matchup matches a real series) uses the
+              path year in <code className="app__code">src/config/poolNhl.ts</code>.
+            </p>
+          </details>
+        ) : null}
         <div id="region-official-results" className="app__toolbar">
           <div className="app__mode">
-            <span className="app__modeLabel">Official bracket</span>
+            <span className="app__modeLabel">
+              {canUseDataActions ? 'Admin official bracket' : 'Official bracket'}
+            </span>
           </div>
-          <div className="app__nhl" aria-live="polite">
-            <button
-              type="button"
-              className="btn-primary"
-              id="sync-nhl-button"
-              disabled={nhlBusy}
-              onClick={async () => {
-                if (
-                  !confirm(
-                    'Replace official results using completed series from the NHL (api-web.nhle.com)?',
-                  )
-                ) {
-                  return
-                }
-                setNhlBusy(true)
-                setNhlError(null)
-                try {
-                  const data = await fetchNhlPlayoffBracket(POOL_NHL_PATH_YEAR)
-                  const next = buildOfficialResultsFromNhlBracket(data, GAMES)
-                  setResults(next)
-                  const at = new Date().toISOString()
-                  saveNhlLastSyncAt(at)
-                  setNhlLastSyncAt(at)
-                } catch (e) {
-                  setNhlError(
-                    e instanceof Error
-                      ? e.message
-                      : 'Could not load the NHL bracket.',
-                  )
-                } finally {
-                  setNhlBusy(false)
-                }
-              }}
-            >
-              {nhlBusy
-                ? 'Loading…'
-                : `Sync from NHL (year ${POOL_NHL_PATH_YEAR})`}
-            </button>
-          </div>
+          {canUseDataActions ? (
+            <div className="app__nhl" aria-live="polite">
+              <button
+                type="button"
+                className="btn-primary"
+                id="sync-nhl-button"
+                disabled={nhlBusy}
+                onClick={async () => {
+                  if (
+                    !confirm(
+                      'Replace official results using completed series from the NHL (api-web.nhle.com)?',
+                    )
+                  ) {
+                    return
+                  }
+                  setNhlBusy(true)
+                  setNhlError(null)
+                  try {
+                    const data = await fetchNhlPlayoffBracket(POOL_NHL_PATH_YEAR)
+                    const next = buildOfficialResultsFromNhlBracket(data, GAMES)
+                    setResults(next)
+                    const at = new Date().toISOString()
+                    saveNhlLastSyncAt(at)
+                    setNhlLastSyncAt(at)
+                  } catch (e) {
+                    setNhlError(
+                      e instanceof Error
+                        ? e.message
+                        : 'Could not load the NHL bracket.',
+                    )
+                  } finally {
+                    setNhlBusy(false)
+                  }
+                }}
+              >
+                {nhlBusy
+                  ? 'Loading...'
+                  : `Sync from NHL (year ${POOL_NHL_PATH_YEAR})`}
+              </button>
+            </div>
+          ) : null}
         </div>
         <p className="app__modeHint">
-          Official results drive the pool standings below. In-progress series
-          stay empty until someone clinches, so points lag the live schedule.
+          {canUseDataActions
+            ? 'Official results drive the pool standings below. In-progress series stay empty until someone clinches, so points lag the live schedule.'
+            : 'Official results drive the pool standings below. Open the admin page to change winners, sync from NHL, or adjust scores.'}
         </p>
         {nhlLastSyncAt ? (
           <p className="app__nhlTrust" role="status">
@@ -386,7 +525,7 @@ export default function App() {
                       state={results}
                       mode="results"
                       layout="bracket"
-                      interactive
+                      interactive={canUseDataActions}
                       onPick={onResults}
                     />
                   )
@@ -406,7 +545,7 @@ export default function App() {
                       state={results}
                       mode="results"
                       layout="bracket"
-                      interactive
+                      interactive={canUseDataActions}
                       onPick={onResults}
                     />
                   )
@@ -425,7 +564,7 @@ export default function App() {
                     state={results}
                     mode="results"
                     layout="bracket"
-                    interactive
+                    interactive={canUseDataActions}
                     onPick={onResults}
                   />
                 )
@@ -448,7 +587,7 @@ export default function App() {
                 state={results}
                 mode="results"
                 layout="bracket"
-                interactive
+                interactive={canUseDataActions}
                 onPick={onResults}
               />
             )
@@ -470,7 +609,7 @@ export default function App() {
                       state={results}
                       mode="results"
                       layout="bracket"
-                      interactive
+                      interactive={canUseDataActions}
                       onPick={onResults}
                     />
                   )
@@ -490,7 +629,7 @@ export default function App() {
                       state={results}
                       mode="results"
                       layout="bracket"
-                      interactive
+                      interactive={canUseDataActions}
                       onPick={onResults}
                     />
                   )
@@ -509,7 +648,7 @@ export default function App() {
                     state={results}
                     mode="results"
                     layout="bracket"
-                    interactive
+                    interactive={canUseDataActions}
                     onPick={onResults}
                   />
                 )
@@ -520,18 +659,23 @@ export default function App() {
       </main>
 
       <section
-        className="standings"
+        className={canUseDataActions ? 'standings standings--admin' : 'standings'}
         id="section-pool-standings"
-        aria-label="Pool standings"
+        aria-label={canUseDataActions ? 'Admin data grid' : 'Pool standings'}
       >
-        <h2 className="standings__title standings__title--emph">Pool standings</h2>
+        <h2 className="standings__title standings__title--emph">
+          {canUseDataActions ? 'Admin data grid' : 'Pool standings'}
+        </h2>
         <p className="standings__sub">
           {hasOfficialResults ? (
             <>
               {poolPlayers.length} entries (Excel import), ranked on official
-              results from above, with direct edits in this grid taking
-              precedence. Round columns only include points from matchups with a
-              decided winner (in-progress series stay at 0 for that slot).
+              results from above. Round columns only include points from
+              matchups with a decided winner (in-progress series stay at 0 for
+              that slot).
+              {canUseDataActions
+                ? ' Admin score edits in this grid take precedence.'
+                : ''}
             </>
           ) : (
             <>
@@ -543,24 +687,25 @@ export default function App() {
                 onClick={goOfficial}
               >
                 Official results
-              </button>{' '}
-              or use{' '}
-              <button
-                type="button"
-                className="app__inlistLink"
-                onClick={goOfficial}
-              >
-                Sync from NHL
               </button>
-              {'.'}
+              {canUseDataActions
+                ? ' or use Sync from NHL.'
+                : ' from the admin page.'}
             </>
           )}
         </p>
         <p className="standings__hintMobile">
-          Compact view: rank, name, and editable total. Rotate or widen the
-          screen to see R1-Final.
+          {canUseDataActions
+            ? 'Full admin grid: all populated score columns are shown and can scroll horizontally on small screens.'
+            : 'Compact view: rank, name, and total. Rotate or widen the screen to see R1-Final.'}
         </p>
-        <div className="standings__tableWrap">
+        <div
+          className={
+            canUseDataActions
+              ? 'standings__tableWrap standings__tableWrap--full'
+              : 'standings__tableWrap'
+          }
+        >
           <table className="standings__table">
             <thead>
               <tr>
@@ -586,38 +731,73 @@ export default function App() {
                 <tr key={row.id}>
                   <td className="standings__num">{row.rank}</td>
                   <td className="standings__name">{row.name}</td>
-                  <EditableScoreCell
-                    value={row.total}
-                    className="standings__num standings__num--total"
-                    ariaLabel={`${row.name} total score`}
-                    onChange={(value) =>
-                      onScoreOverride(row.id, 'total', value)
-                    }
-                  />
-                  <EditableScoreCell
-                    value={row.byRound[0]}
-                    className="standings__num standings__colR"
-                    ariaLabel={`${row.name} round 1 score`}
-                    onChange={(value) => onScoreOverride(row.id, 0, value)}
-                  />
-                  <EditableScoreCell
-                    value={row.byRound[1]}
-                    className="standings__num standings__colR"
-                    ariaLabel={`${row.name} round 2 score`}
-                    onChange={(value) => onScoreOverride(row.id, 1, value)}
-                  />
-                  <EditableScoreCell
-                    value={row.byRound[2]}
-                    className="standings__num standings__colR"
-                    ariaLabel={`${row.name} round 3 score`}
-                    onChange={(value) => onScoreOverride(row.id, 2, value)}
-                  />
-                  <EditableScoreCell
-                    value={row.byRound[3]}
-                    className="standings__num standings__colR"
-                    ariaLabel={`${row.name} final score`}
-                    onChange={(value) => onScoreOverride(row.id, 3, value)}
-                  />
+                  {canUseDataActions ? (
+                    <EditableScoreCell
+                      value={row.total}
+                      className="standings__num standings__num--total"
+                      ariaLabel={`${row.name} total score`}
+                      onChange={(value) =>
+                        onScoreOverride(row.id, 'total', value)
+                      }
+                    />
+                  ) : (
+                    <StaticScoreCell
+                      value={row.total}
+                      className="standings__num standings__num--total"
+                    />
+                  )}
+                  {canUseDataActions ? (
+                    <EditableScoreCell
+                      value={row.byRound[0]}
+                      className="standings__num standings__colR"
+                      ariaLabel={`${row.name} round 1 score`}
+                      onChange={(value) => onScoreOverride(row.id, 0, value)}
+                    />
+                  ) : (
+                    <StaticScoreCell
+                      value={row.byRound[0]}
+                      className="standings__num standings__colR"
+                    />
+                  )}
+                  {canUseDataActions ? (
+                    <EditableScoreCell
+                      value={row.byRound[1]}
+                      className="standings__num standings__colR"
+                      ariaLabel={`${row.name} round 2 score`}
+                      onChange={(value) => onScoreOverride(row.id, 1, value)}
+                    />
+                  ) : (
+                    <StaticScoreCell
+                      value={row.byRound[1]}
+                      className="standings__num standings__colR"
+                    />
+                  )}
+                  {canUseDataActions ? (
+                    <EditableScoreCell
+                      value={row.byRound[2]}
+                      className="standings__num standings__colR"
+                      ariaLabel={`${row.name} round 3 score`}
+                      onChange={(value) => onScoreOverride(row.id, 2, value)}
+                    />
+                  ) : (
+                    <StaticScoreCell
+                      value={row.byRound[2]}
+                      className="standings__num standings__colR"
+                    />
+                  )}
+                  {canUseDataActions ? (
+                    <EditableScoreCell
+                      value={row.byRound[3]}
+                      className="standings__num standings__colR"
+                      ariaLabel={`${row.name} final score`}
+                      onChange={(value) => onScoreOverride(row.id, 3, value)}
+                    />
+                  ) : (
+                    <StaticScoreCell
+                      value={row.byRound[3]}
+                      className="standings__num standings__colR"
+                    />
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -626,6 +806,69 @@ export default function App() {
       </section>
     </div>
   )
+}
+
+function AdminGate({
+  email,
+  error,
+  onEmailChange,
+  onSubmit,
+  onBack,
+}: {
+  email: string
+  error: string | null
+  onEmailChange: (value: string) => void
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  onBack: () => void
+}) {
+  return (
+    <div className="app app--gate">
+      <section className="admin-gate" aria-labelledby="admin-gate-title">
+        <p className="app__eyebrow">Admin access</p>
+        <h1 id="admin-gate-title">Admin page</h1>
+        <p className="admin-gate__copy">
+          Data actions are only available to the {ADMIN_EMAIL} account.
+        </p>
+        <form className="admin-gate__form" onSubmit={onSubmit}>
+          <label className="admin-gate__label" htmlFor="admin-email">
+            Account email
+          </label>
+          <input
+            id="admin-email"
+            className="admin-gate__input"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => onEmailChange(event.currentTarget.value)}
+            placeholder={ADMIN_EMAIL}
+          />
+          {error ? (
+            <p className="admin-gate__error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <div className="admin-gate__actions">
+            <button type="submit" className="btn-primary">
+              Continue
+            </button>
+            <button type="button" className="btn-ghost" onClick={onBack}>
+              Back to public results
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  )
+}
+
+function StaticScoreCell({
+  value,
+  className,
+}: {
+  value: number
+  className: string
+}) {
+  return <td className={className}>{value}</td>
 }
 
 function EditableScoreCell({

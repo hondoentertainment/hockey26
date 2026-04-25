@@ -7,6 +7,10 @@
   box-sizing: border-box;
 }
 
+.app--gate {
+  max-width: 34rem;
+}
+
 /* --- Top header --- */
 .app__header {
   background: var(--surface);
@@ -15,6 +19,115 @@
   box-shadow: var(--shadow-md);
   padding: 1.25rem 1.5rem 1.5rem;
   margin-bottom: 1.5rem;
+}
+
+.app__nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 1rem;
+}
+
+.app__navLink {
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.app__navLink:hover {
+  color: var(--text-h);
+  border-color: var(--border-strong);
+}
+
+.app__navLink--active {
+  background: var(--text-h);
+  border-color: var(--text-h);
+  color: var(--bg-elevated);
+}
+
+.app__adminStatus {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.app__adminSignOut {
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.admin-gate {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 1.5rem;
+}
+
+.admin-gate__copy {
+  margin: 0.75rem 0 1rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.admin-gate__form {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-gate__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.admin-gate__input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  color: var(--text-h);
+}
+
+.admin-gate__input:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-border);
+}
+
+.admin-gate__error {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #c23c2e;
+}
+
+.admin-gate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
 }
 
 .app__titleRow {
@@ -740,6 +853,11 @@
   box-shadow: var(--shadow-sm);
 }
 
+.standings--admin {
+  border-color: var(--accent-border);
+  background: linear-gradient(180deg, var(--surface) 0%, var(--bg-elevated) 100%);
+}
+
 .standings__title {
   font-size: 1.125rem;
   font-weight: 600;
@@ -790,10 +908,18 @@
   max-height: min(60vh, 32rem);
 }
 
+.standings__tableWrap--full {
+  max-height: min(70vh, 42rem);
+}
+
 .standings__table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.88rem;
+}
+
+.standings__tableWrap--full .standings__table {
+  min-width: 46rem;
 }
 
 .standings__table th,
@@ -901,6 +1027,23 @@
   .standings__name {
     min-width: 0;
     max-width: none;
+  }
+
+  .standings--admin .standings__colR {
+    display: table-cell;
+  }
+
+  .standings--admin .standings__tableWrap {
+    max-height: min(70vh, 42rem);
+    overflow-x: auto;
+  }
+
+  .standings--admin .standings__table {
+    min-width: 46rem;
+  }
+
+  .standings--admin .standings__name {
+    min-width: 9rem;
   }
 }
 
