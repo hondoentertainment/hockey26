@@ -13,7 +13,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "nhl:bracket:fetch": "node scripts/fetch-nhl-bracket.mjs",
-    "bracket:from-excel": "node scripts/excel-to-bracket.mjs"
+    "bracket:from-excel": "node scripts/excel-to-bracket.mjs",
+    "participants:from-excel": "node scripts/excel-to-participants.mjs",
+    "pool:from-excel": "node scripts/excel-to-bracket.mjs && node scripts/excel-to-participants.mjs"
   },
   "dependencies": {
     "react": "^19.2.5",

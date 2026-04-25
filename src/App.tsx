@@ -12,8 +12,13 @@ import { POOL_NHL_PATH_YEAR } from './config/poolNhl'
 import { loadPicks, loadResults, savePicks, saveResults } from './lib/persistence'
 import { fetchNhlPlayoffBracket } from './lib/fetchNhlPlayoffBracket'
 import { buildOfficialResultsFromNhlBracket } from './lib/syncNhlToPoolResults'
+import { buildLeaderboard } from './lib/rankings'
 import { scoreBracket } from './lib/score'
+import type { ParticipantsFile } from './config/participantsFromExcel.schema'
+import poolFile from './config/participantsFromExcel.json' with { type: 'json' }
 import './App.css'
+
+const { players: poolPlayers } = poolFile as ParticipantsFile
 
 const LEFT_ORDER = [
   'g1',
@@ -55,6 +60,16 @@ export default function App() {
     [picks, results],
   )
 
+  const rankings = useMemo(
+    () => buildLeaderboard(poolPlayers, results, GAMES),
+    [results],
+  )
+
+  const hasOfficialResults = useMemo(
+    () => allGameIds.some((id) => (results[id] ?? null) != null),
+    [results],
+  )
+
   const applyChoice = useCallback(
     (setState: typeof setPicks) =>
       (gameId: string, abbr: string) => {
@@ -91,7 +106,9 @@ export default function App() {
           Round scoring: 1 + 2 + 4 + 8 pts · max {MAX_SCORE} total. First round is
           loaded from <code className="app__code">bracketFromExcel.json</code> (regenerate
           from <code className="app__code">Hockey Tracking.xlsx</code> with{' '}
-          <code className="app__code">npm run bracket:from-excel</code>). Official
+          <code className="app__code">npm run pool:from-excel</code> (or{' '}
+          <code className="app__code">participants:from-excel</code> for the
+          standings only). Official
           results can be synced from the NHL when a matchup matches a real series (
           <code className="app__code">src/config/poolNhl.ts</code>).
         </p>
@@ -234,6 +251,48 @@ export default function App() {
           })}
         </div>
       </main>
+
+      <section className="standings" aria-label="Pool standings">
+        <h2 className="standings__title">Pool standings</h2>
+        <p className="standings__sub">
+          {poolPlayers.length} entries from the Excel import. Scores use your
+          &quot;Official results&quot; above; everyone ties at 0 until those are
+          set (or use Sync from NHL).
+        </p>
+        {!hasOfficialResults ? (
+          <p className="standings__note" role="status">
+            No official results yet — all entries show 0 points.
+          </p>
+        ) : null}
+        <div className="standings__tableWrap">
+          <table className="standings__table">
+            <thead>
+              <tr>
+                <th scope="col">Rank</th>
+                <th scope="col">Name</th>
+                <th scope="col">Total</th>
+                <th scope="col">R1</th>
+                <th scope="col">R2</th>
+                <th scope="col">R3</th>
+                <th scope="col">Final</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rankings.map((row) => (
+                <tr key={row.id}>
+                  <td className="standings__num">{row.rank}</td>
+                  <td className="standings__name">{row.name}</td>
+                  <td className="standings__num">{row.total}</td>
+                  <td className="standings__num">{row.byRound[0]}</td>
+                  <td className="standings__num">{row.byRound[1]}</td>
+                  <td className="standings__num">{row.byRound[2]}</td>
+                  <td className="standings__num">{row.byRound[3]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <footer className="app__foot">
         <div className="app__actions">

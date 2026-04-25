@@ -283,6 +283,77 @@
   color: var(--text);
 }
 
+.standings {
+  max-width: 100%;
+  margin: 2.5rem 0 0;
+  padding: 0 0 0.5rem;
+}
+
+.standings__title {
+  font-size: 1.25rem;
+  margin: 0 0 0.4rem;
+  color: var(--text-h);
+}
+
+.standings__sub,
+.standings__note {
+  font-size: 0.9rem;
+  color: var(--text);
+  margin: 0 0 0.75rem;
+  max-width: 40rem;
+}
+
+.standings__tableWrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--code-bg, rgba(0, 0, 0, 0.03));
+}
+
+.standings__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.standings__table th,
+.standings__table td {
+  padding: 0.4rem 0.55rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.standings__table th {
+  color: var(--text);
+  font-weight: 600;
+  background: var(--bg, #fff);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.standings__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.standings__name {
+  font-weight: 500;
+  color: var(--text-h);
+  min-width: 8rem;
+}
+
+.standings__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--mono, ui-monospace, system-ui, sans-serif);
+}
+
+.standings__num:first-child {
+  text-align: right;
+  width: 2.5rem;
+}
+
 .app__foot {
   margin-top: 2rem;
   padding-top: 1rem;

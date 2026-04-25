@@ -1,0 +1,573 @@
+{
+  "$schemaNote": "Regenerate: npm run participants:from-excel",
+  "source": "Hockey Tracking.xlsx",
+  "players": [
+    {
+      "id": "1",
+      "name": "Natalie B",
+      "picks": {
+        "g1": "LAK",
+        "g2": "DAL",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "LAK",
+        "g10": "VGK",
+        "g13": "VGK",
+        "g15": "VGK",
+        "g5": "BUF",
+        "g6": "TBL",
+        "g7": "OTT",
+        "g8": "PIT",
+        "g11": "BUF",
+        "g12": "OTT",
+        "g14": "OTT"
+      }
+    },
+    {
+      "id": "2",
+      "name": "Donn",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "VGK",
+        "g13": "COL",
+        "g15": "COL",
+        "g5": "BUF",
+        "g6": "TBL",
+        "g7": "CAR",
+        "g8": "PHI",
+        "g11": "TBL",
+        "g12": "CAR",
+        "g14": "CAR"
+      }
+    },
+    {
+      "id": "3",
+      "name": "Bunny",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "VGK",
+        "g4": "ANA",
+        "g9": "COL",
+        "g10": "VGK",
+        "g13": "VGK",
+        "g15": "TBL",
+        "g5": "BOS",
+        "g6": "TBL",
+        "g7": "CAR",
+        "g8": "PIT",
+        "g11": "TBL",
+        "g12": "PIT",
+        "g14": "TBL"
+      }
+    },
+    {
+      "id": "4",
+      "name": "No Name",
+      "picks": {
+        "g1": "COL",
+        "g2": "DAL",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "EDM",
+        "g13": "EDM",
+        "g15": "EDM",
+        "g5": "BUF",
+        "g6": "TBL",
+        "g7": "OTT",
+        "g8": "PIT",
+        "g11": "TBL",
+        "g12": "OTT",
+        "g14": "TBL"
+      }
+    },
+    {
+      "id": "5",
+      "name": "Audrey Jennings",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "MIN",
+        "g10": "VGK",
+        "g13": "MIN",
+        "g15": "MIN",
+        "g5": "BUF",
+        "g6": "MTL",
+        "g7": "CAR",
+        "g8": "PIT",
+        "g11": "BUF",
+        "g12": "CAR",
+        "g14": "BUF"
+      }
+    },
+    {
+      "id": "6",
+      "name": "James",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "VGK",
+        "g4": "ANA",
+        "g9": "MIN",
+        "g10": "VGK",
+        "g13": "VGK",
+        "g15": "BUF",
+        "g5": "BUF",
+        "g6": "MTL",
+        "g7": "CAR",
+        "g8": "PHI",
+        "g11": "BUF",
+        "g12": "PHI",
+        "g14": "BUF"
+      }
+    },
+    {
+      "id": "7",
+      "name": "Ali Hen",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "UTA",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "EDM",
+        "g13": "COL",
+        "g15": "COL",
+        "g5": "BUF",
+        "g6": "MTL",
+        "g7": "CAR",
+        "g8": "PIT",
+        "g11": "MTL",
+        "g12": "CAR",
+        "g14": "CAR"
+      }
+    },
+    {
+      "id": "8",
+      "name": "Mia",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "MIN",
+        "g10": "EDM",
+        "g13": "MIN",
+        "g15": "CAR",
+        "g5": "BUF",
+        "g6": "TBL",
+        "g7": "CAR",
+        "g8": "PIT",
+        "g11": "TBL",
+        "g12": "CAR",
+        "g14": "CAR"
+      }
+    },
+    {
+      "id": "9",
+      "name": "Jackson",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "EDM",
+        "g13": "COL",
+        "g15": "COL",
+        "g5": "BUF",
+        "g6": "TBL",
+        "g7": "CAR",
+        "g8": "PIT",
+        "g11": "TBL",
+        "g12": "PIT",
+        "g14": "PIT"
+      }
+    },
+    {
+      "id": "10",
+      "name": "Lamont",
+      "picks": {
+        "g1": "COL",
+        "g2": "DAL",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "VGK",
+        "g13": "COL",
+        "g15": "COL",
+        "g5": "BUF",
+        "g6": "TBL",
+        "g7": "CAR",
+        "g8": "PIT",
+        "g11": "TBL",
+        "g12": "CAR",
+        "g14": "CAR"
+      }
+    },
+    {
+      "id": "11",
+      "name": "Justin C",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "EDM",
+        "g13": "COL",
+        "g15": "COL",
+        "g5": "BUF",
+        "g6": "MTL",
+        "g7": "CAR",
+        "g8": "PIT",
+        "g11": "BUF",
+        "g12": "PIT",
+        "g14": "BUF"
+      }
+    },
+    {
+      "id": "12",
+      "name": "Chef",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "MIN",
+        "g10": "VGK",
+        "g13": "MIN",
+        "g15": "TBL",
+        "g5": "BOS",
+        "g6": "TBL",
+        "g7": "CAR",
+        "g8": "PIT",
+        "g11": "TBL",
+        "g12": "PIT",
+        "g14": "TBL"
+      }
+    },
+    {
+      "id": "13",
+      "name": "Anastasia (Stasi)",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "UTA",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "UTA",
+        "g13": "COL",
+        "g15": "BOS",
+        "g5": "BOS",
+        "g6": "MTL",
+        "g7": "CAR",
+        "g8": "PIT",
+        "g11": "BOS",
+        "g12": "PIT",
+        "g14": "BOS"
+      }
+    },
+    {
+      "id": "14",
+      "name": "Gig",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "MIN",
+        "g10": "VGK",
+        "g13": "VGK",
+        "g15": "OTT",
+        "g5": "BUF",
+        "g6": "TBL",
+        "g7": "OTT",
+        "g8": "PIT",
+        "g11": "BUF",
+        "g12": "OTT",
+        "g14": "OTT"
+      }
+    },
+    {
+      "id": "15",
+      "name": "Matt Mcpherson",
+      "picks": {
+        "g1": "COL",
+        "g2": "DAL",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "EDM",
+        "g13": "COL",
+        "g15": "MTL",
+        "g5": "BUF",
+        "g6": "MTL",
+        "g7": "OTT",
+        "g8": "PIT",
+        "g11": "MTL",
+        "g12": "OTT",
+        "g14": "MTL"
+      }
+    },
+    {
+      "id": "16",
+      "name": "Sunil Saluja",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "VGK",
+        "g13": "COL",
+        "g15": "PIT",
+        "g5": "BOS",
+        "g6": "TBL",
+        "g7": "OTT",
+        "g8": "PIT",
+        "g11": "TBL",
+        "g12": "PIT",
+        "g14": "PIT"
+      }
+    },
+    {
+      "id": "17",
+      "name": "Markus",
+      "picks": {
+        "g1": "COL",
+        "g2": "DAL",
+        "g3": "UTA",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "EDM",
+        "g13": "EDM",
+        "g15": "BUF",
+        "g5": "BUF",
+        "g6": "TBL",
+        "g7": "CAR",
+        "g8": "PIT",
+        "g11": "BUF",
+        "g12": "CAR",
+        "g14": "BUF"
+      }
+    },
+    {
+      "id": "18",
+      "name": "Pword",
+      "picks": {
+        "g1": "LAK",
+        "g2": "DAL",
+        "g3": "UTA",
+        "g4": "EDM",
+        "g9": "DAL",
+        "g10": "UTA",
+        "g13": "DAL",
+        "g15": "DAL",
+        "g5": "BUF",
+        "g6": "MTL",
+        "g7": "CAR",
+        "g8": "PHI",
+        "g11": "MTL",
+        "g12": "CAR",
+        "g14": "CAR"
+      }
+    },
+    {
+      "id": "19",
+      "name": "Kyle",
+      "picks": {
+        "g1": "COL",
+        "g2": "DAL",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "EDM",
+        "g13": "COL",
+        "g15": "COL",
+        "g5": "BUF",
+        "g6": "TBL",
+        "g7": "CAR",
+        "g8": "PIT",
+        "g11": "BUF",
+        "g12": "CAR",
+        "g14": "CAR"
+      }
+    },
+    {
+      "id": "20",
+      "name": "Jenn",
+      "picks": {
+        "g1": "LAK",
+        "g2": "DAL",
+        "g3": "UTA",
+        "g4": "ANA",
+        "g9": "LAK",
+        "g10": "UTA",
+        "g13": "UTA",
+        "g15": "UTA",
+        "g5": "BOS",
+        "g6": "MTL",
+        "g7": "OTT",
+        "g8": "PIT",
+        "g11": "BOS",
+        "g12": "PIT",
+        "g14": "BOS"
+      }
+    },
+    {
+      "id": "21",
+      "name": "James Jones",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "VGK",
+        "g13": "COL",
+        "g15": "CAR",
+        "g5": "BOS",
+        "g6": "TBL",
+        "g7": "CAR",
+        "g8": "PHI",
+        "g11": "BOS",
+        "g12": "CAR",
+        "g14": "CAR"
+      }
+    },
+    {
+      "id": "22",
+      "name": "Owen Evans",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "EDM",
+        "g13": "EDM",
+        "g15": "EDM",
+        "g5": "BUF",
+        "g6": "MIL",
+        "g7": "CAR",
+        "g8": "PIT",
+        "g11": "MTL",
+        "g12": "PIT",
+        "g14": "MTL"
+      }
+    },
+    {
+      "id": "23",
+      "name": "Cate",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "EDM",
+        "g13": "COL",
+        "g15": "COL",
+        "g5": "BUF",
+        "g6": "MTL",
+        "g7": "CAR",
+        "g8": "PIT",
+        "g11": "MTL",
+        "g12": "CAR",
+        "g14": "MTL"
+      }
+    },
+    {
+      "id": "24",
+      "name": "Jay",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "VGK",
+        "g13": "VGK",
+        "g15": "CAR",
+        "g5": "BUF",
+        "g6": "TBL",
+        "g7": "CAR",
+        "g8": "PHI",
+        "g11": "TBL",
+        "g12": "CAR",
+        "g14": "CAR"
+      }
+    },
+    {
+      "id": "25",
+      "name": "Hockey Steve",
+      "picks": {
+        "g1": "COL",
+        "g2": "DAL",
+        "g3": "UTA",
+        "g4": "EDM",
+        "g9": "DAL",
+        "g10": "EDM",
+        "g13": "DAL",
+        "g15": "DAL",
+        "g5": "BUF",
+        "g6": "MTL",
+        "g7": "CAR",
+        "g8": "PHI",
+        "g11": "MTL",
+        "g12": "PHI",
+        "g14": "MTL"
+      }
+    },
+    {
+      "id": "26",
+      "name": "Chris M",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "UTA",
+        "g4": "EDM",
+        "g9": "MIN",
+        "g10": "EDM",
+        "g13": "EDM",
+        "g15": "EDM",
+        "g5": "BUF",
+        "g6": "MTL",
+        "g7": "OTT",
+        "g8": "PIT",
+        "g11": "MTL",
+        "g12": "OTT",
+        "g14": "OTT"
+      }
+    },
+    {
+      "id": "27",
+      "name": "CA Scott (Text)",
+      "picks": {
+        "g1": "COL",
+        "g2": "MIN",
+        "g3": "VGK",
+        "g4": "EDM",
+        "g9": "COL",
+        "g10": "EDM",
+        "g13": "COL",
+        "g15": "CAR",
+        "g5": "BOS",
+        "g6": "TBL",
+        "g7": "CAR",
+        "g8": "PIT",
+        "g11": "TBL",
+        "g12": "CAR",
+        "g14": "CAR"
+      }
+    }
+  ]
+}
