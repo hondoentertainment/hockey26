@@ -36,6 +36,23 @@ const { players: poolPlayers } = poolData
 const FINAL_ID = 'g15' as const
 const ADMIN_EMAIL = 'hondo4185@gmail.com'
 const ADMIN_EMAIL_STORAGE_KEY = 'hockey26.adminAccountEmail'
+const RAW_PICK_COLUMNS = [
+  ['1A', 'g1'],
+  ['1B', 'g2'],
+  ['1C', 'g3'],
+  ['1D', 'g4'],
+  ['1E', 'g5'],
+  ['1F', 'g6'],
+  ['1G', 'g7'],
+  ['1H', 'g8'],
+  ['2A', 'g9'],
+  ['2B', 'g10'],
+  ['2C', 'g11'],
+  ['2D', 'g12'],
+  ['3A', 'g13'],
+  ['3B', 'g14'],
+  ['4', 'g15'],
+] as const
 
 type RoundIndex = 0 | 1 | 2 | 3
 type ScoreField = 'total' | RoundIndex
@@ -168,6 +185,11 @@ export default function App() {
   const rankings = useMemo(
     () => applyScoreOverrides(calculatedRankings, scoreOverrides),
     [calculatedRankings, scoreOverrides],
+  )
+
+  const rankingsById = useMemo(
+    () => new Map(rankings.map((row) => [row.id, row])),
+    [rankings],
   )
 
   const hasOfficialResults = useMemo(
@@ -804,6 +826,70 @@ export default function App() {
           </table>
         </div>
       </section>
+
+      {canUseDataActions ? (
+        <section
+          className="raw-sheet"
+          aria-labelledby="raw-hockey-tracking-title"
+        >
+          <h2
+            className="standings__title standings__title--emph"
+            id="raw-hockey-tracking-title"
+          >
+            Raw Hockey Tracking sheet
+          </h2>
+          <p className="standings__sub">
+            Raw import from <code className="app__code">{poolData.source}</code>,
+            including the original sheet numbers, calculated score numbers, and
+            unformatted pick columns.
+          </p>
+          <div className="raw-sheet__tableWrap">
+            <table className="raw-sheet__table">
+              <thead>
+                <tr>
+                  <th scope="col">Number</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Rank</th>
+                  <th scope="col">Total</th>
+                  <th scope="col">R1</th>
+                  <th scope="col">R2</th>
+                  <th scope="col">R3</th>
+                  <th scope="col">Final</th>
+                  {RAW_PICK_COLUMNS.map(([header]) => (
+                    <th scope="col" key={header}>
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {poolPlayers.map((player) => {
+                  const ranking = rankingsById.get(player.id)
+                  return (
+                    <tr key={player.id}>
+                      <td className="raw-sheet__num">{player.id}</td>
+                      <td className="raw-sheet__name">{player.name}</td>
+                      <td className="raw-sheet__num">{ranking?.rank ?? ''}</td>
+                      <td className="raw-sheet__num raw-sheet__num--total">
+                        {ranking?.total ?? ''}
+                      </td>
+                      <td className="raw-sheet__num">{ranking?.byRound[0] ?? ''}</td>
+                      <td className="raw-sheet__num">{ranking?.byRound[1] ?? ''}</td>
+                      <td className="raw-sheet__num">{ranking?.byRound[2] ?? ''}</td>
+                      <td className="raw-sheet__num">{ranking?.byRound[3] ?? ''}</td>
+                      {RAW_PICK_COLUMNS.map(([header, gameId]) => (
+                        <td className="raw-sheet__pick" key={header}>
+                          {player.picks[gameId] ?? ''}
+                        </td>
+                      ))}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
     </div>
   )
 }

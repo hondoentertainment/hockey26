@@ -1005,6 +1005,80 @@
   box-shadow: 0 0 0 2px var(--accent-border);
 }
 
+/* --- Admin raw sheet --- */
+.raw-sheet {
+  margin: 1.5rem 0 0;
+  background: var(--surface);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-lg);
+  padding: 1.15rem 1.25rem 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.raw-sheet__tableWrap {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  max-height: min(72vh, 44rem);
+}
+
+.raw-sheet__table {
+  min-width: 86rem;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.raw-sheet__table th,
+.raw-sheet__table td {
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.raw-sheet__table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.raw-sheet__table tbody tr:nth-child(even) {
+  background: var(--bg-elevated);
+}
+
+.raw-sheet__name {
+  min-width: 10rem;
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+.raw-sheet__num,
+.raw-sheet__pick {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.raw-sheet__num {
+  text-align: right;
+  color: var(--text-h);
+}
+
+.raw-sheet__num--total {
+  font-weight: 700;
+  color: var(--accent);
+}
+
 @media (max-width: 560px) {
   .standings__hintMobile {
     display: block;
