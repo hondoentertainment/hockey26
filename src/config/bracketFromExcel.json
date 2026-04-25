@@ -1,0 +1,40 @@
+{
+  "$schemaNote": "Generated from the pool Excel. Regenerate: npm run bracket:from-excel",
+  "source": "Hockey Tracking.xlsx",
+  "left": [
+    [
+      "COL",
+      "LAK"
+    ],
+    [
+      "DAL",
+      "MIN"
+    ],
+    [
+      "VGK",
+      "UTA"
+    ],
+    [
+      "EDM",
+      "ANA"
+    ]
+  ],
+  "right": [
+    [
+      "BUF",
+      "BOS"
+    ],
+    [
+      "TBL",
+      "MTL"
+    ],
+    [
+      "CAR",
+      "OTT"
+    ],
+    [
+      "PIT",
+      "PHI"
+    ]
+  ]
+}

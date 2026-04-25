@@ -1,32 +1,32 @@
 /**
- * 2025–26-style Stanley Cup pool bracket (editable per season).
- * R1: eight matchups; R2: four; R3: two; Final: one.
- * Points: R1=1, R2=2, R3=4, Final=8.
+ * Stanley Cup pool bracket. First-round matchups are loaded from
+ * `bracketFromExcel.json`, generated from `Hockey Tracking.xlsx` via
+ * `npm run bracket:from-excel`. Tree structure (R2+): fixed.
  */
 
 import type { BracketGame, Team } from './bracketTypes'
+import type { BracketFromExcel } from './bracketFromExcel.schema'
+import poolData from './bracketFromExcel.json' with { type: 'json' }
+import { t } from './nhlTeamNames'
+
+const pool: BracketFromExcel = (() => {
+  const p = poolData as BracketFromExcel & {
+    $schemaNote?: string
+    source?: string
+  }
+  return { left: p.left, right: p.right }
+})()
+
+const R1L: readonly [Team, Team][] = pool.left.map(
+  ([a, b]) => [t(a), t(b)] as [Team, Team],
+)
+const R1R: readonly [Team, Team][] = pool.right.map(
+  ([a, b]) => [t(a), t(b)] as [Team, Team],
+)
 
 export const POINTS_BY_ROUND: readonly [number, number, number, number] = [
   1, 2, 4, 8,
 ] as const
-
-const t = (abbr: string, name: string): Team => ({ abbr, name })
-
-/** First round — left (Western) pod */
-const R1L: readonly [teamA: Team, teamB: Team][] = [
-  [t('COL', 'Avalanche'), t('LAK', 'Kings')],
-  [t('DAL', 'Stars'), t('MIN', 'Wild')],
-  [t('VGK', 'Golden Knights'), t('UTA', 'Hockey Club')],
-  [t('EDM', 'Oilers'), t('ANA', 'Ducks')],
-]
-
-/** First round — right (Eastern) pod */
-const R1R: readonly [teamA: Team, teamB: Team][] = [
-  [t('BUF', 'Sabres'), t('BOS', 'Bruins')],
-  [t('TBL', 'Lightning'), t('MTL', 'Canadiens')],
-  [t('CAR', 'Hurricanes'), t('OTT', 'Senators')],
-  [t('PIT', 'Penguins'), t('PHI', 'Flyers')],
-]
 
 export const GAMES: BracketGame[] = [
   {

@@ -88,9 +88,11 @@ export default function App() {
       <header className="app__header">
         <h1>Stanley Cup pool</h1>
         <p className="app__sub">
-          Round scoring: 1 + 2 + 4 + 8 pts · max {MAX_SCORE} total. Official results can
-          be filled from the NHL’s published bracket when a pool matchup matches a
-          real completed series (set path year in{' '}
+          Round scoring: 1 + 2 + 4 + 8 pts · max {MAX_SCORE} total. First round is
+          loaded from <code className="app__code">bracketFromExcel.json</code> (regenerate
+          from <code className="app__code">Hockey Tracking.xlsx</code> with{' '}
+          <code className="app__code">npm run bracket:from-excel</code>). Official
+          results can be synced from the NHL when a matchup matches a real series (
           <code className="app__code">src/config/poolNhl.ts</code>).
         </p>
         <div className="app__mode">
