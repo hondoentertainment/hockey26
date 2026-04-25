@@ -59,6 +59,13 @@ describe('scoreBracket', () => {
     expect(s.total).toBe(0)
   })
 
+  it('gives 2 points for a correct R2 game', () => {
+    const results: Picks = { g9: 'COL' }
+    const s = scoreBracket({ g9: 'COL' }, results, GAMES)
+    expect(s.total).toBe(2)
+    expect(s.byRound[1]).toBe(2)
+  })
+
   it('partial bracket: 4 correct in R1 only', () => {
     const results: Picks = {
       g1: 'COL',

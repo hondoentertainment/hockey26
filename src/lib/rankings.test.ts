@@ -29,4 +29,16 @@ describe('buildLeaderboard', () => {
     expect(p[2]!.total).toBe(0)
     expect(p[2]!.rank).toBe(3)
   })
+
+  it('gives the same rank to a three-way tie at zero', () => {
+    const p = buildLeaderboard(
+      [
+        { id: 'a', name: 'A', picks: { g1: 'X' } },
+        { id: 'b', name: 'B', picks: { g1: 'Y' } },
+        { id: 'c', name: 'C', picks: { g1: 'Z' } },
+      ],
+      {},
+    )
+    expect(p.every((x) => x.rank === 1)).toBe(true)
+  })
 })

@@ -88,4 +88,14 @@ describe('buildOfficialResultsFromNhlBracket', () => {
     expect(r['b']).toBe('DDD')
     expect(r['c']).toBe('AAA')
   })
+
+  it('returns all nulls when there are no series', () => {
+    const r = buildOfficialResultsFromNhlBracket(
+      { series: [] },
+      miniGames,
+    )
+    for (const k of Object.keys(r)) {
+      expect(r[k]).toBeNull()
+    }
+  })
 })

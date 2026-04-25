@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:watch": "vitest",
     "nhl:bracket:fetch": "node scripts/fetch-nhl-bracket.mjs",
     "bracket:from-excel": "node scripts/excel-to-bracket.mjs",
     "participants:from-excel": "node scripts/excel-to-participants.mjs",
