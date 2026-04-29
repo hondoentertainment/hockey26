@@ -1,0 +1,47 @@
+name: Update playoff stats
+
+# Runs every 20 minutes. Most runs are no-ops (no API change = no commit).
+# A new commit only happens when a series score or winner changes, which
+# triggers a Vercel deploy so the site reflects the updated standings.
+
+on:
+  schedule:
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: update-stats
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Fetch NHL data and update baselines
+        id: update
+        run: node scripts/update-stats.mjs 2026
+
+      - name: Commit and push if anything changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/config/officialResultsBaseline.json \
+                  src/config/seriesScoresBaseline.json
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+          else
+            git commit -m "chore: auto-update playoff stats from NHL"
+            git push origin main
+          fi
