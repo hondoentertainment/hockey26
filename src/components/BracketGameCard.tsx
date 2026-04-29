@@ -12,9 +12,11 @@ type Props = {
   interactive?: boolean
   /**
    * `bracket` = round labels live in the parent; hide per-card title and game id
-   * (closer to ESPN’s matchup rows).
+   * (closer to ESPN's matchup rows).
    */
   layout?: 'default' | 'bracket'
+  /** Win counts for the current series. Shown only when series is in progress. */
+  seriesScore?: { topWins: number; bottomWins: number } | null
   onPick: (gameId: string, abbr: string) => void
 }
 
@@ -31,6 +33,7 @@ export function BracketGameCard({
   mode,
   interactive = true,
   layout = 'default',
+  seriesScore = null,
   onPick,
 }: Props) {
   const pts = POINTS_BY_ROUND[game.round]
@@ -69,7 +72,11 @@ export function BracketGameCard({
           onPick={() => top && onPick(game.id, top.abbr)}
         />
         <span className="game-card__vs" aria-hidden="true">
-          vs
+          {seriesScore != null &&
+          seriesScore.topWins < 4 &&
+          seriesScore.bottomWins < 4
+            ? `${seriesScore.topWins}–${seriesScore.bottomWins}`
+            : 'vs'}
         </span>
         <TeamButton
           team={bottom}
