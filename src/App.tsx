@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import {
   GAMES,
+  POINTS_BY_ROUND,
   allGameIds,
   getGameById,
 } from './config/bracket-2026'
@@ -196,6 +197,11 @@ export default function App() {
   const rankingsById = useMemo(
     () => new Map(rankings.map((row) => [row.id, row])),
     [rankings],
+  )
+
+  const calculatedRankingsById = useMemo(
+    () => new Map(calculatedRankings.map((row) => [row.id, row])),
+    [calculatedRankings],
   )
 
   const seriesCorrectAudit = useMemo(
@@ -837,6 +843,103 @@ export default function App() {
           </table>
         </div>
       </section>
+
+      {canUseDataActions ? (
+        <section className="pick-points" aria-labelledby="pick-points-title">
+          <h2
+            className="standings__title standings__title--emph"
+            id="pick-points-title"
+          >
+            Pick points alignment
+          </h2>
+          <p className="standings__sub">
+            Each cell shows the imported pick, official winner, and raw points
+            earned for that slot. Standings edits are shown separately as the
+            adjusted total.
+          </p>
+          <div className="pick-points__tableWrap">
+            <table className="pick-points__table">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Raw total</th>
+                  <th scope="col">Adjusted total</th>
+                  {RAW_PICK_COLUMNS.map(([header, gameId]) => {
+                    const game = getGameById(gameId)
+                    const points = game ? POINTS_BY_ROUND[game.round] : 0
+                    return (
+                      <th scope="col" key={gameId}>
+                        {header}
+                        <span className="pick-points__headMeta">
+                          {gameId.toUpperCase()} · {points} pt
+                          {points === 1 ? '' : 's'}
+                        </span>
+                      </th>
+                    )
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {poolPlayers.map((player) => {
+                  const calculated = calculatedRankingsById.get(player.id)
+                  const adjusted = rankingsById.get(player.id)
+                  return (
+                    <tr key={player.id}>
+                      <th scope="row" className="pick-points__name">
+                        {player.name}
+                      </th>
+                      <td className="pick-points__num">
+                        {calculated?.total ?? 0}
+                      </td>
+                      <td className="pick-points__num pick-points__num--total">
+                        {adjusted?.total ?? calculated?.total ?? 0}
+                      </td>
+                      {RAW_PICK_COLUMNS.map(([header, gameId]) => {
+                        const game = getGameById(gameId)
+                        const pick = player.picks[gameId] ?? null
+                        const winner = (results[gameId] as string | null) ?? null
+                        const points =
+                          game && winner != null && pick === winner
+                            ? POINTS_BY_ROUND[game.round]
+                            : 0
+                        const status =
+                          winner == null
+                            ? 'pending'
+                            : pick === winner
+                              ? 'correct'
+                              : 'miss'
+                        const statusLabel =
+                          status === 'pending'
+                            ? 'Pending'
+                            : status === 'correct'
+                              ? 'Correct'
+                              : 'Miss'
+
+                        return (
+                          <td
+                            className={`pick-points__cell pick-points__cell--${status}`}
+                            key={header}
+                          >
+                            <span className="pick-points__pick">
+                              {pick ?? '-'}
+                            </span>
+                            <span className="pick-points__meta">
+                              Winner: {winner ?? 'TBD'}
+                            </span>
+                            <span className="pick-points__points">
+                              {statusLabel} · +{points}
+                            </span>
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
 
       {canUseDataActions ? (
         <section className="series-audit" aria-labelledby="series-audit-title">
