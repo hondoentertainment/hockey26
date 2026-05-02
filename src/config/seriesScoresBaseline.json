@@ -1,0 +1,11 @@
+{
+  "$schemaNote": "R1 series win counts as of 2026-04-29. topWins = first team listed in bracketFromExcel, bottomWins = second. Update after each game day.",
+  "g1": { "topWins": 4, "bottomWins": 0 },
+  "g2": { "topWins": 2, "bottomWins": 3 },
+  "g3": { "topWins": 2, "bottomWins": 2 },
+  "g4": { "topWins": 2, "bottomWins": 3 },
+  "g5": { "topWins": 3, "bottomWins": 2 },
+  "g6": { "topWins": 2, "bottomWins": 2 },
+  "g7": { "topWins": 4, "bottomWins": 0 },
+  "g8": { "topWins": 3, "bottomWins": 3 }
+}

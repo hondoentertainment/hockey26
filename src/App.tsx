@@ -30,10 +30,29 @@ import { buildSeriesCorrectAudit } from './lib/seriesCorrectAudit'
 import type { ParticipantsFile } from './config/participantsFromExcel.schema'
 import poolFile from './config/participantsFromExcel.json' with { type: 'json' }
 import officialResultsBaseline from './config/officialResultsBaseline.json' with { type: 'json' }
+import seriesScoresBaselineRaw from './config/seriesScoresBaseline.json' with { type: 'json' }
 import './App.css'
 
 const poolData = poolFile as ParticipantsFile
 const { players: poolPlayers } = poolData
+
+type SeriesScore = { topWins: number; bottomWins: number }
+const seriesScoresBaseline: Record<string, SeriesScore> = (() => {
+  const raw = seriesScoresBaselineRaw as Record<string, unknown>
+  const out: Record<string, SeriesScore> = {}
+  for (const [k, v] of Object.entries(raw)) {
+    if (
+      k.startsWith('$') ||
+      typeof v !== 'object' ||
+      v == null ||
+      !('topWins' in v) ||
+      !('bottomWins' in v)
+    )
+      continue
+    out[k] = v as SeriesScore
+  }
+  return out
+})()
 
 const FINAL_ID = 'g15' as const
 const ADMIN_EMAIL = 'hondo4185@gmail.com'
@@ -565,6 +584,7 @@ export default function App() {
                       mode="results"
                       layout="bracket"
                       interactive={canUseDataActions}
+                      seriesScore={seriesScoresBaseline[id] ?? null}
                       onPick={onResults}
                     />
                   )
@@ -649,6 +669,7 @@ export default function App() {
                       mode="results"
                       layout="bracket"
                       interactive={canUseDataActions}
+                      seriesScore={seriesScoresBaseline[id] ?? null}
                       onPick={onResults}
                     />
                   )
