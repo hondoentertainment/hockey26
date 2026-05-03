@@ -1,5 +1,5 @@
 {
-  "$schemaNote": "R1 series win counts as of 2026-04-29. topWins = first team listed in bracketFromExcel, bottomWins = second. Update after each game day.",
+  "$schemaNote": "R1 series win counts as of 2026-05-03. topWins = first team listed in bracketFromExcel, bottomWins = second. Update after each game day.",
   "g1": {
     "topWins": 4,
     "bottomWins": 0
