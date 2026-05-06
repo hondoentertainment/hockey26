@@ -605,6 +605,7 @@ export default function App() {
                       mode="results"
                       layout="bracket"
                       interactive={canUseDataActions}
+                      seriesScore={seriesScoresBaseline[id] ?? null}
                       onPick={onResults}
                     />
                   )
@@ -690,6 +691,7 @@ export default function App() {
                       mode="results"
                       layout="bracket"
                       interactive={canUseDataActions}
+                      seriesScore={seriesScoresBaseline[id] ?? null}
                       onPick={onResults}
                     />
                   )

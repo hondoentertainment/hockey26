@@ -1,7 +1,7 @@
 /**
  * Fetches the current NHL playoff bracket and updates two static baselines:
  *   src/config/officialResultsBaseline.json  — series winners (locked once set)
- *   src/config/seriesScoresBaseline.json     — per-R1-game win counts (for display)
+ *   src/config/seriesScoresBaseline.json     — per-series win counts (for display)
  *
  * Usage: node scripts/update-stats.mjs [YEAR]
  * Exit 0 = success (files may or may not have changed)
@@ -78,17 +78,17 @@ const KO = [
   { id: 'g15', nhlRound: 4, feeds: ['g13', 'g14'] },
 ]
 
-// ── Compute winners and R1 scores ──────────────────────────────────────────
+// ── Compute winners and series scores ───────────────────────────────────────
 
 const computedWinners = {}
-const newR1Scores = {}
+const newSeriesScores = {}
 
 // R1: determine win counts and winner
 for (const g of R1) {
   const s = nhl.get(`1|${pairKey(g.top, g.bottom)}`)
   if (!s) {
     computedWinners[g.id] = null
-    newR1Scores[g.id] = null
+    newSeriesScores[g.id] = null
     continue
   }
 
@@ -96,7 +96,7 @@ for (const g of R1) {
   const poolTopWins    = poolTopIsNhlTop ? s.topSeedWins    : s.bottomSeedWins
   const poolBottomWins = poolTopIsNhlTop ? s.bottomSeedWins : s.topSeedWins
 
-  newR1Scores[g.id] = { topWins: poolTopWins, bottomWins: poolBottomWins }
+  newSeriesScores[g.id] = { topWins: poolTopWins, bottomWins: poolBottomWins }
   computedWinners[g.id] =
     poolTopWins >= 4 ? norm(g.top) : poolBottomWins >= 4 ? norm(g.bottom) : null
 }
@@ -105,8 +105,21 @@ for (const g of R1) {
 for (const g of KO) {
   const a = computedWinners[g.feeds[0]]
   const b = computedWinners[g.feeds[1]]
-  if (!a || !b) { computedWinners[g.id] = null; continue }
+  if (!a || !b) {
+    computedWinners[g.id] = null
+    newSeriesScores[g.id] = null
+    continue
+  }
   const s = nhl.get(`${g.nhlRound}|${pairKey(a, b)}`)
+  if (!s) {
+    computedWinners[g.id] = null
+    newSeriesScores[g.id] = null
+    continue
+  }
+  const poolTopIsNhlTop = norm(a) === norm(s.topSeedTeam.abbrev)
+  const poolTopWins    = poolTopIsNhlTop ? s.topSeedWins    : s.bottomSeedWins
+  const poolBottomWins = poolTopIsNhlTop ? s.bottomSeedWins : s.topSeedWins
+  newSeriesScores[g.id] = { topWins: poolTopWins, bottomWins: poolBottomWins }
   computedWinners[g.id] = getWinner(s)
 }
 
@@ -128,12 +141,16 @@ for (const [id, winner] of Object.entries(computedWinners)) {
   }
 }
 
-// seriesScores: update R1 win counts; preserve $schemaNote
-const schemaNote = currentScores['$schemaNote']
+// seriesScores: update win counts; preserve $schemaNote
+const schemaNote =
+  'Series win counts as of latest NHL API refresh. topWins = first team displayed in the pool bracket slot, bottomWins = second.'
 const newScores = {}
 if (schemaNote) newScores['$schemaNote'] = schemaNote
-for (const g of R1) {
-  newScores[g.id] = newR1Scores[g.id] ?? currentScores[g.id] ?? null
+for (const g of [...R1, ...KO]) {
+  const score = newSeriesScores[g.id] ?? null
+  if (score != null) {
+    newScores[g.id] = score
+  }
 }
 
 // ── Detect changes ─────────────────────────────────────────────────────────
@@ -163,13 +180,14 @@ if (resultsChanged) {
 if (scoresChanged) {
   writeFileSync(scoresPath, JSON.stringify(newScores, null, 2) + '\n', 'utf8')
   console.log('Updated seriesScoresBaseline.json:')
-  for (const g of R1) {
+  for (const g of [...R1, ...KO]) {
     const prev = currentScores[g.id]
     const next = newScores[g.id]
     if (JSON.stringify(prev) !== JSON.stringify(next)) {
       const p = prev ? `${prev.topWins}-${prev.bottomWins}` : 'n/a'
       const n = next ? `${next.topWins}-${next.bottomWins}` : 'n/a'
-      console.log(`  ${g.id} (${g.top} v ${g.bottom}): ${p} → ${n}`)
+      const label = 'top' in g ? `${g.top} v ${g.bottom}` : g.id
+      console.log(`  ${g.id} (${label}): ${p} → ${n}`)
     }
   }
 }
