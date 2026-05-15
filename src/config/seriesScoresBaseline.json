@@ -37,7 +37,7 @@
     "bottomWins": 1
   },
   "g10": {
-    "topWins": 3,
+    "topWins": 4,
     "bottomWins": 2
   },
   "g11": {
@@ -46,6 +46,10 @@
   },
   "g12": {
     "topWins": 4,
+    "bottomWins": 0
+  },
+  "g13": {
+    "topWins": 0,
     "bottomWins": 0
   }
 }
