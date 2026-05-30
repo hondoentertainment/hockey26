@@ -54,6 +54,10 @@
   },
   "g14": {
     "topWins": 1,
-    "bottomWins": 3
+    "bottomWins": 4
+  },
+  "g15": {
+    "topWins": 0,
+    "bottomWins": 0
   }
 }
