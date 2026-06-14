@@ -27,6 +27,7 @@ import { fetchNhlPlayoffBracket } from './lib/fetchNhlPlayoffBracket'
 import { buildOfficialResultsFromNhlBracket } from './lib/syncNhlToPoolResults'
 import { buildLeaderboard } from './lib/rankings'
 import { buildSeriesCorrectAudit } from './lib/seriesCorrectAudit'
+import { buildWinProjection } from './lib/winProjection'
 import type { ParticipantsFile } from './config/participantsFromExcel.schema'
 import poolFile from './config/participantsFromExcel.json' with { type: 'json' }
 import officialResultsBaseline from './config/officialResultsBaseline.json' with { type: 'json' }
@@ -78,7 +79,7 @@ const ROUND_LABELS = ['R1', 'R2', 'R3', 'Final'] as const
 
 type RoundIndex = 0 | 1 | 2 | 3
 type ScoreField = 'total' | RoundIndex
-type Page = 'public' | 'admin'
+type Page = 'public' | 'winpct' | 'admin'
 
 function normalizeAccountEmail(email: string): string {
   return email.trim().toLowerCase()
@@ -86,7 +87,10 @@ function normalizeAccountEmail(email: string): string {
 
 function getPageFromHash(): Page {
   if (typeof window === 'undefined') return 'public'
-  return window.location.hash.toLowerCase() === '#admin' ? 'admin' : 'public'
+  const hash = window.location.hash.toLowerCase()
+  if (hash === '#admin') return 'admin'
+  if (hash === '#win' || hash === '#winpct') return 'winpct'
+  return 'public'
 }
 
 function loadAdminAccountEmail(): string | null {
@@ -183,6 +187,12 @@ function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`
 }
 
+function formatChampionPct(value: number): string {
+  if (value <= 0) return '0%'
+  if (value < 0.005) return '<1%'
+  return `${Math.round(value * 100)}%`
+}
+
 export default function App() {
   const [page, setPage] = useState<Page>(() => getPageFromHash())
   const [adminAccountEmail, setAdminAccountEmail] = useState<string | null>(
@@ -225,6 +235,16 @@ export default function App() {
 
   const seriesCorrectAudit = useMemo(
     () => buildSeriesCorrectAudit(poolPlayers, results, GAMES),
+    [results],
+  )
+
+  const winProjection = useMemo(
+    () => buildWinProjection(poolPlayers, results, GAMES),
+    [results],
+  )
+
+  const undecidedSeries = useMemo(
+    () => allGameIds.filter((id) => (results[id] ?? null) == null).length,
     [results],
   )
 
@@ -323,6 +343,11 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [])
 
+  const goWinPct = useCallback(() => {
+    window.location.hash = 'win'
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
+
   const goAdmin = useCallback(() => {
     window.location.hash = 'admin'
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -365,41 +390,61 @@ export default function App() {
     )
   }
 
+  if (page === 'winpct') {
+    return (
+      <div className="app">
+        <header className="app__header">
+          <PageNav
+            page={page}
+            onPublic={goPublic}
+            onWinPct={goWinPct}
+            onAdmin={goAdmin}
+            canUseDataActions={canUseDataActions}
+            adminAccountEmail={adminAccountEmail}
+            onSignOut={onAdminSignOut}
+          />
+          <div className="app__titleRow">
+            <div>
+              <p className="app__eyebrow">Playoff pool</p>
+              <h1>Win percentage</h1>
+            </div>
+          </div>
+          <p className="app__lede">
+            Projected chance to win the pool and pick accuracy for every entry
+            in the import. Chance to win re-projects whenever official results
+            change. Open{' '}
+            <button
+              type="button"
+              className="app__inlistLink"
+              onClick={goPublic}
+            >
+              Public results
+            </button>{' '}
+            for the bracket and full standings.
+          </p>
+        </header>
+        <main>
+          <WinPercentTable
+            rows={winProjection}
+            undecidedSeries={undecidedSeries}
+          />
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="app">
       <header className="app__header">
-        <nav className="app__nav" aria-label="Page navigation">
-          <button
-            type="button"
-            className={
-              isAdminPage ? 'app__navLink' : 'app__navLink app__navLink--active'
-            }
-            onClick={goPublic}
-          >
-            Public results
-          </button>
-          <button
-            type="button"
-            className={
-              isAdminPage ? 'app__navLink app__navLink--active' : 'app__navLink'
-            }
-            onClick={goAdmin}
-          >
-            Admin
-          </button>
-          {canUseDataActions ? (
-            <span className="app__adminStatus">
-              Signed in as {adminAccountEmail}
-              <button
-                type="button"
-                className="app__adminSignOut"
-                onClick={onAdminSignOut}
-              >
-                Sign out
-              </button>
-            </span>
-          ) : null}
-        </nav>
+        <PageNav
+          page={page}
+          onPublic={goPublic}
+          onWinPct={goWinPct}
+          onAdmin={goAdmin}
+          canUseDataActions={canUseDataActions}
+          adminAccountEmail={adminAccountEmail}
+          onSignOut={onAdminSignOut}
+        />
         <ol className="app__howTo">
           <li>
             <button
@@ -1085,6 +1130,152 @@ export default function App() {
         </section>
       ) : null}
     </div>
+  )
+}
+
+function PageNav({
+  page,
+  onPublic,
+  onWinPct,
+  onAdmin,
+  canUseDataActions,
+  adminAccountEmail,
+  onSignOut,
+}: {
+  page: Page
+  onPublic: () => void
+  onWinPct: () => void
+  onAdmin: () => void
+  canUseDataActions: boolean
+  adminAccountEmail: string | null
+  onSignOut: () => void
+}) {
+  const linkClass = (active: boolean) =>
+    active ? 'app__navLink app__navLink--active' : 'app__navLink'
+  return (
+    <nav className="app__nav" aria-label="Page navigation">
+      <button
+        type="button"
+        className={linkClass(page === 'public')}
+        onClick={onPublic}
+      >
+        Public results
+      </button>
+      <button
+        type="button"
+        className={linkClass(page === 'winpct')}
+        onClick={onWinPct}
+      >
+        Win %
+      </button>
+      <button
+        type="button"
+        className={linkClass(page === 'admin')}
+        onClick={onAdmin}
+      >
+        Admin
+      </button>
+      {canUseDataActions ? (
+        <span className="app__adminStatus">
+          Signed in as {adminAccountEmail}
+          <button
+            type="button"
+            className="app__adminSignOut"
+            onClick={onSignOut}
+          >
+            Sign out
+          </button>
+        </span>
+      ) : null}
+    </nav>
+  )
+}
+
+function WinPercentTable({
+  rows,
+  undecidedSeries,
+}: {
+  rows: ReturnType<typeof buildWinProjection>
+  undecidedSeries: number
+}) {
+  return (
+    <section className="winpct" aria-label="Win percentage">
+      <h2 className="standings__title standings__title--emph">
+        Projected standings
+      </h2>
+      <p className="standings__sub">
+        {undecidedSeries > 0 ? (
+          <>
+            <strong>Chance to win</strong> projects every one of the{' '}
+            {undecidedSeries} undecided{' '}
+            {undecidedSeries === 1 ? 'series' : 'series'} as a 50/50 coin flip,
+            then counts the share of outcomes where each entry finishes first
+            (ties split the credit). <strong>Accuracy</strong> is correct picks
+            over series already decided. Based on official results — no team
+            strength is assumed.
+          </>
+        ) : (
+          <>
+            All series are decided, so <strong>chance to win</strong> reflects
+            the final standings. <strong>Accuracy</strong> is correct picks over
+            all decided series.
+          </>
+        )}
+      </p>
+      <div className="standings__tableWrap">
+        <table className="standings__table winpct__table">
+          <thead>
+            <tr>
+              <th scope="col">Rank</th>
+              <th scope="col">Name</th>
+              <th scope="col">Pts</th>
+              <th scope="col">Chance to win</th>
+              <th scope="col">Accuracy</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.id}>
+                <td className="standings__num">{row.rank}</td>
+                <td className="standings__name">{row.name}</td>
+                <td className="standings__num standings__num--total">
+                  {row.total}
+                </td>
+                <td className="standings__num">
+                  <div className="winpct__chance">
+                    <span
+                      className="winpct__barTrack"
+                      aria-hidden="true"
+                    >
+                      <span
+                        className="winpct__bar"
+                        style={{ width: formatPercent(row.championPct) }}
+                      />
+                    </span>
+                    <span className="winpct__chanceVal">
+                      {formatChampionPct(row.championPct)}
+                    </span>
+                  </div>
+                </td>
+                <td className="standings__num">
+                  {row.decidedPicks > 0 ? (
+                    <>
+                      {formatPercent(row.pickAccuracy)}
+                      <span className="winpct__accMeta">
+                        {' '}
+                        {row.correctPicks}/{row.decidedPicks}
+                      </span>
+                    </>
+                  ) : (
+                    '—'
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   )
 }
 
